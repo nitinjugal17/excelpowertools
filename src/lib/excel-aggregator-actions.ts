@@ -1,3 +1,4 @@
+
 import * as XLSX from 'xlsx-js-style';
 import type { AggregationResult, HeaderFormatOptions, MatchMode, SummaryConfig, UpdateResult } from './excel-types';
 import { getColumnIndex, parseSourceColumns, sanitizeSheetNameForFormula, escapeRegex, parseColumnIdentifier } from './excel-helpers';
@@ -640,19 +641,19 @@ function _generateInSheetSummaryAOA(
 ): any[][] {
     const dataToInsert: any[][] = [];
     const { dataSource, generationMode, showOnlyLocalKeys } = options;
-    const { headerRow, keyCountColumn, aggregationMode, countBlanksInColumn, blankCountLabel, showBlanksInInSheetSummary, totalRowFormatting, blankRowFormatting, headerFormatting } = config;
+    const { headerRow, keyCountColumn, aggregationMode, countBlanksInColumn, blankLabel, showBlanksInInSheetSummary, totalRowFormatting, blankRowFormatting, summaryHeaderFormatting } = config;
 
     const dynamicTitle = results.sheetTitles?.[sheetName] || config.inSheetSummaryTitle || 'Summary';
     const headerCell: XLSX.CellObject = { v: dynamicTitle, t: 's' };
-    applyFormatting(headerCell, headerFormatting);
+    applyFormatting(headerCell, summaryHeaderFormatting);
     const countHeaderCell: XLSX.CellObject = { v: 'Count', t: 's' };
-    applyFormatting(countHeaderCell, headerFormatting);
+    applyFormatting(countHeaderCell, summaryHeaderFormatting);
     dataToInsert.push([headerCell, countHeaderCell]);
     
     const getKeysForSheet = () => {
         const allKeysInReport = new Set(results.reportingKeys);
-        if (results.blankCounts && results.blankCounts.total > 0 && blankCountLabel) {
-            allKeysInReport.add(blankCountLabel);
+        if (results.blankCounts && results.blankCounts.total > 0 && blankLabel) {
+            allKeysInReport.add(blankLabel);
         }
 
         if (dataSource === 'reportingScope' || !showOnlyLocalKeys) {
@@ -664,8 +665,8 @@ function _generateInSheetSummaryAOA(
         for (const key in sheetCounts) {
             if (sheetCounts[key] > 0) localKeys.add(key);
         }
-        if ((results.blankCounts?.perSheet[sheetName] || 0) > 0 && showBlanksInInSheetSummary && blankCountLabel) {
-            localKeys.add(blankCountLabel);
+        if ((results.blankCounts?.perSheet[sheetName] || 0) > 0 && showBlanksInInSheetSummary && blankLabel) {
+            localKeys.add(blankLabel);
         }
         return Array.from(localKeys);
     };
@@ -687,8 +688,8 @@ function _generateInSheetSummaryAOA(
                 const dataStartRowForFormula = headerRow + 1;
                 const formulaRange = `${sanitizeSheetNameForFormula(sheetName)}!${keyColLetter}${dataStartRowForFormula}:${keyColLetter}${lastRow}`;
 
-                if (key === blankCountLabel) {
-                    const blankColForFormulaIdx = countBlanksInColumn ? getColumnIndex(countBlanksInColumn, Object.keys(results.perSheetCounts[sheetName])) : keyColIdx;
+                if (key === blankLabel) {
+                    const blankColForFormulaIdx = countBlanksInColumn ? getColumnIndex(countBlanksInColumn, Object.keys(results.perSheetCounts[sheetName] || {})) : keyColIdx;
                     if(blankColForFormulaIdx !== null) {
                          const blankColLetter = XLSX.utils.encode_col(blankColForFormulaIdx);
                          const blankFormulaRange = `${sanitizeSheetNameForFormula(sheetName)}!${blankColLetter}${dataStartRowForFormula}:${blankColLetter}${lastRow}`;
@@ -707,12 +708,14 @@ function _generateInSheetSummaryAOA(
         } else {
             const sheetCounts = results.perSheetCounts[sheetName] || {};
             const blankCount = results.blankCounts?.perSheet[sheetName] || 0;
-            const staticCount = sheetCounts[key] || (key === blankCountLabel ? blankCount : 0);
+            const staticCount = key === blankLabel ? blankCount : (sheetCounts[key] || 0);
             
             valueCell = { t: 'n', v: staticCount };
         }
         
-        if (key === blankCountLabel && !showBlanksInInSheetSummary) {
+        const count = typeof valueCell.v === 'number' ? valueCell.v : (dataSource === 'localSheet' ? (results.perSheetCounts[sheetName]?.[key] || 0) : (results.totalCounts[key] || 0));
+        
+        if (key === blankLabel && !showBlanksInInSheetSummary && count === 0) {
             return;
         }
 
@@ -721,9 +724,12 @@ function _generateInSheetSummaryAOA(
         applyFormatting(linkedValueCell, { horizontalAlignment: 'right' });
 
         const keyCell: XLSX.CellObject = { v: key, t: 's' };
-        applyFormatting(keyCell, headerFormatting?.horizontalAlignment ? { horizontalAlignment: headerFormatting.horizontalAlignment } : undefined);
+        if (summaryHeaderFormatting?.horizontalAlignment) {
+            applyFormatting(keyCell, { horizontalAlignment: summaryHeaderFormatting.horizontalAlignment });
+        }
 
-        if (key === blankCountLabel) {
+
+        if (key === blankLabel) {
             applyFormatting(keyCell, blankRowFormatting);
             applyFormatting(linkedValueCell, blankRowFormatting);
         }
@@ -731,7 +737,7 @@ function _generateInSheetSummaryAOA(
         dataToInsert.push([keyCell, linkedValueCell]);
     });
     
-    if (dataRowsAdded > 0 && totalRowFormatting) {
+    if (dataRowsAdded > 0 && config.enableTotalRowFormatting) {
         const insertColLetter = XLSX.utils.encode_col(parseColumnIdentifier(config.insertColumn || "A")! + 1);
         const totalFormula = `SUM(${insertColLetter}${config.insertStartRow! + 1}:${insertColLetter}${config.insertStartRow! + dataToInsert.length -1})`;
         const totalValueCell: XLSX.CellObject = { t: 'n', f: totalFormula };
@@ -790,3 +796,4 @@ export function insertAggregationResultsIntoSheets(
     }
     console.log("Finished insertAggregationResultsIntoSheets.");
 }
+

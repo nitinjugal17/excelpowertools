@@ -25,12 +25,14 @@ const nextConfig = {
 
     // In development, ignore specific directories to prevent server restarts.
     if (dev) {
-      // Use an array to explicitly ignore dotfiles, node_modules, and our uploads directory.
-      // This prevents Next.js from reloading when files change in these folders.
+      // Use an array of glob patterns to explicitly ignore directories.
+      // This prevents Next.js from watching these folders for changes.
       config.watchOptions.ignored = [
-        /(^|[\/\\])\../, // Default Next.js rule for dotfiles
-        /node_modules/, // Default Next.js rule for node_modules
-        /uploads/, // Custom rule for our uploads directory
+        '**/.git/**',
+        '**/node_modules/**',
+        '**/.next/**',
+        '**/uploads/**',
+        '**/src/data/**', // Ignore the data directory to prevent restarts on settings save
       ];
     }
 

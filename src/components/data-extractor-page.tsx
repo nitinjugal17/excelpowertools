@@ -370,7 +370,7 @@ export default function DataExtractorPage({ onProcessingChange, onFileStateChang
 
     const originalFileName = file.name.substring(0, file.name.lastIndexOf('.')) + '_extracted_data.pdf';
     doc.save(originalFileName);
-    toast({ title: t('toast.downloadSuccess') as string, description: "PDF report has been generated." });
+    toast({ title: t('toast.downloadSuccess') as string, description: t('extractor.toast.pdfSuccess') as string });
 
   }, [extractionReport, file, toast, t]);
 

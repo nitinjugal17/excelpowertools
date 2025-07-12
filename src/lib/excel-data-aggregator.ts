@@ -1,9 +1,11 @@
+
 import * as XLSX from 'xlsx-js-style';
 import type { AggregationResult } from './excel-types';
 
 export * from './excel-aggregator-core';
 export * from './excel-aggregator-actions';
 export * from './excel-aggregator-reports';
+export * from './excel-group-reporter';
 
 /**
  * Recalculates aggregation results based on a map of edited keys.
@@ -82,19 +84,17 @@ export function getModifiedAggregationData(
         }
     }
     
+    const finalBlankLabel = keyResolutionMap.get(originalBlankLabel) || originalBlankLabel;
+
     const modifiedResult: AggregationResult = {
         ...resultToProcess,
         totalCounts: newTotalCounts,
         perSheetCounts: newPerSheetCounts,
         reportingKeys: Object.keys(newTotalCounts).sort((a, b) => a.localeCompare(b)),
         blankCounts: resultToProcess.blankCounts ? {
-            total: Object.values(newPerSheetCounts).reduce((total, sheetCounts) => {
-                const finalBlankKey = keyResolutionMap.get(originalBlankLabel) || originalBlankLabel;
-                return total + (sheetCounts[finalBlankKey] || 0);
-            }, 0),
+            total: newTotalCounts[finalBlankLabel] || 0,
             perSheet: Object.keys(newPerSheetCounts).reduce((acc, sheetName) => {
-                const finalBlankKey = keyResolutionMap.get(originalBlankLabel) || originalBlankLabel;
-                acc[sheetName] = newPerSheetCounts[sheetName][finalBlankKey] || 0;
+                acc[sheetName] = newPerSheetCounts[sheetName][finalBlankLabel] || 0;
                 return acc;
             }, {} as Record<string, number>),
         } : undefined,
@@ -108,8 +108,6 @@ export function getModifiedAggregationData(
             modifiedValueToKeyMap.set(value, finalKey);
         }
     }
-    
-    const finalBlankLabel = keyResolutionMap.get(originalBlankLabel) || originalBlankLabel;
     
     console.log("Finished rebuilding aggregation data. Final keys:", modifiedResult.reportingKeys);
     return { modifiedResult, modifiedValueToKeyMap, finalBlankLabel, editedKeyToOriginalsMap };

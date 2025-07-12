@@ -21,8 +21,12 @@ import SheetMergerPage from '@/components/sheet-merger-page';
 import ColumnPurgerPage from '@/components/column-purger-page';
 import ExcelComparatorPage from '@/components/excel-comparator-page';
 import PivotTableCreatorPage from '@/components/pivot-table-creator-page';
+import WebExporterPage from '@/components/web-exporter-page';
+import HtmlToExcelPage from '@/components/html-to-excel-page';
+import SharePointEmbedderPage from '@/components/sharepoint-embedder-page';
+import LocalFileEmbedderPage from '@/components/local-file-embedder-page';
 
-import { FileSpreadsheet, Wand2, Sigma, FileScan, CopyCheck, Paintbrush, BookUser, Sparkles, LibraryBig, Fingerprint, FileSearch, Combine, FileMinus, GitCompareArrows, LayoutGrid } from "lucide-react";
+import { FileSpreadsheet, Wand2, Sigma, FileScan, CopyCheck, Paintbrush, BookUser, Sparkles, LibraryBig, Fingerprint, Combine, FileSearch, FileMinus, GitCompareArrows, LayoutGrid, Globe, FileCode, Share2, FolderSymlink } from "lucide-react";
 import { useLanguage } from '@/context/language-context';
 import type { Tool, ToolInfo } from '@/types/tools';
 
@@ -42,6 +46,10 @@ const toolComponents: Record<Tool, React.ComponentType<any>> = {
   extractor: DataExtractorPage,
   comparator: ExcelComparatorPage,
   pivot: PivotTableCreatorPage,
+  webExporter: WebExporterPage,
+  htmlToExcel: HtmlToExcelPage,
+  sharepointEmbedder: SharePointEmbedderPage,
+  localFileEmbedder: LocalFileEmbedderPage,
 };
 
 const toolInfo: Record<Tool, ToolInfo> = {
@@ -60,17 +68,20 @@ const toolInfo: Record<Tool, ToolInfo> = {
     uniqueFinder: { icon: Fingerprint, labelKey: "sidebar.uniqueValueFinder" },
     extractor: { icon: FileSearch, labelKey: "sidebar.dataExtractor" },
     pivot: { icon: LayoutGrid, labelKey: "sidebar.pivotCreator" },
+    webExporter: { icon: Globe, labelKey: "sidebar.webExporter" },
+    htmlToExcel: { icon: FileCode, labelKey: "sidebar.htmlToExcel" },
+    sharepointEmbedder: { icon: Share2, labelKey: "sidebar.sharepointEmbedder" },
+    localFileEmbedder: { icon: FolderSymlink, labelKey: "sidebar.localFileEmbedder" },
 };
 
 export default function MainLayout() {
   const [activeTool, setActiveTool] = useState<Tool>('guide');
   const [isToolProcessing, setIsToolProcessing] = useState(false);
   const [isFileLoaded, setIsFileLoaded] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
   const { t } = useLanguage();
 
   const handleProcessingChange = useCallback((processing: boolean) => {
-    // A timeout helps prevent a race condition where the state updates
-    // just as the user clicks, but before the confirmation dialog can appear.
     setTimeout(() => setIsToolProcessing(processing), 50);
   }, []);
 
@@ -78,15 +89,19 @@ export default function MainLayout() {
       setIsFileLoaded(hasFile);
   }, []);
 
-  const handleSetActiveTool = (tool: Tool) => {
-    const isDirty = isToolProcessing || (isFileLoaded && activeTool !== 'guide');
+  const handleDirtyStateChange = useCallback((dirty: boolean) => {
+      setIsDirty(dirty);
+  }, []);
 
-    if (isDirty) {
+  const handleSetActiveTool = (tool: Tool) => {
+    const shouldWarn = isToolProcessing || (isFileLoaded && activeTool !== 'guide' && activeTool !== 'sharepointEmbedder' && activeTool !== 'localFileEmbedder') || isDirty;
+
+    if (shouldWarn) {
       if (window.confirm(t('common.confirmSwitch') as string)) {
         setActiveTool(tool);
-        // Reset processing and file state when the user confirms the switch
         setIsToolProcessing(false);
         setIsFileLoaded(false);
+        setIsDirty(false);
       }
     } else {
       setActiveTool(tool);
@@ -96,10 +111,14 @@ export default function MainLayout() {
   const ActiveComponent = toolComponents[activeTool];
   const activeLabel = [t(toolInfo[activeTool].labelKey)].flat().join(' ');
 
-  const activeComponentProps = {
+  const activeComponentProps: any = {
     onProcessingChange: handleProcessingChange,
     onFileStateChange: handleFileStateChange,
   };
+
+  if (activeTool === 'aggregator') {
+    activeComponentProps.onDirtyStateChange = handleDirtyStateChange;
+  }
 
   return (
     <SidebarProvider>
@@ -107,7 +126,7 @@ export default function MainLayout() {
         activeTool={activeTool}
         setActiveTool={handleSetActiveTool}
         toolInfo={toolInfo}
-        isProcessing={isToolProcessing || (isFileLoaded && activeTool !== 'guide')}
+        isProcessing={isToolProcessing || (isFileLoaded && activeTool !== 'guide' && activeTool !== 'sharepointEmbedder' && activeTool !== 'localFileEmbedder') || isDirty}
       />
       <SidebarInset>
         <AppHeader activeLabel={activeLabel} />

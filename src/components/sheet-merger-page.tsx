@@ -334,15 +334,15 @@ export default function SheetMergerPage({ onProcessingChange, onFileStateChange 
                 <Label htmlFor="mode-merge" className="flex items-start space-x-3 p-4 border rounded-md has-[:checked]:border-primary has-[:checked]:bg-primary/10 cursor-pointer">
                     <RadioGroupItem value="merge" id="mode-merge" className="mt-1"/>
                     <div className="grid gap-1.5">
-                        <span className="font-semibold">{t('merger.modeMerge')}</span>
-                        <p className="text-xs text-muted-foreground">{t('merger.modeMergeDesc')}</p>
+                        <span className="font-semibold">{[t('merger.modeMerge')].flat().join(' ')}</span>
+                        <p className="text-xs text-muted-foreground">{[t('merger.modeMergeDesc')].flat().join(' ')}</p>
                     </div>
                 </Label>
                 <Label htmlFor="mode-combine" className="flex items-start space-x-3 p-4 border rounded-md has-[:checked]:border-primary has-[:checked]:bg-primary/10 cursor-pointer">
                     <RadioGroupItem value="combine" id="mode-combine" className="mt-1"/>
                     <div className="grid gap-1.5">
-                        <span className="font-semibold">{t('merger.modeCombine')}</span>
-                        <p className="text-xs text-muted-foreground">{t('merger.modeCombineDesc')}</p>
+                        <span className="font-semibold">{[t('merger.modeCombine')].flat().join(' ')}</span>
+                        <p className="text-xs text-muted-foreground">{[t('merger.modeCombineDesc')].flat().join(' ')}</p>
                     </div>
                 </Label>
             </RadioGroup>
@@ -442,7 +442,7 @@ export default function SheetMergerPage({ onProcessingChange, onFileStateChange 
                 <div className="space-y-2">
                     <Label htmlFor="combine-file" className="flex items-center space-x-2 text-sm font-medium">
                         <FileInput className="h-5 w-5" />
-                        <span>{t('merger.uploadStepCombine')}</span>
+                        <span>{[t('merger.uploadStepCombine')].flat().join(' ')}</span>
                     </Label>
                     <Input id="combine-file" type="file" onChange={handleCombineFileChange} disabled={isProcessing} className="file:text-primary file:font-semibold file:bg-primary/10 file:border-0 hover:file:bg-primary/20" />
                 </div>
@@ -450,7 +450,7 @@ export default function SheetMergerPage({ onProcessingChange, onFileStateChange 
                   <>
                     <div className="space-y-3">
                       <Label className="flex items-center space-x-2 text-sm font-medium mb-2">
-                        <span>{t('merger.selectSheetsCombine')}</span>
+                        <span>{[t('merger.selectSheetsCombine')].flat().join(' ')}</span>
                       </Label>
                       <div className="flex items-center space-x-2 mb-2 p-2 border rounded-md bg-secondary/20">
                           <Checkbox
@@ -482,14 +482,14 @@ export default function SheetMergerPage({ onProcessingChange, onFileStateChange 
                     <div className="space-y-2">
                         <Label htmlFor="header-row" className="flex items-center space-x-2 text-sm font-medium">
                             <FileSpreadsheet className="h-4 w-4" />
-                            <span>{t('merger.headerRowStep')}</span>
+                            <span>{[t('merger.headerRowStep')].flat().join(' ')}</span>
                         </Label>
                         <Input id="header-row" type="number" min="1" value={headerRow} onChange={(e) => setHeaderRow(parseInt(e.target.value, 10) || 1)} disabled={isProcessing}/>
-                        <p className="text-xs text-muted-foreground">{t('merger.headerRowDesc')}</p>
+                        <p className="text-xs text-muted-foreground">{[t('merger.headerRowDesc')].flat().join(' ')}</p>
                     </div>
                      <div className="space-y-2">
-                        <Label htmlFor="new-sheet-name" className="text-sm font-medium">{t('merger.newSheetName')}</Label>
-                        <Input id="new-sheet-name" value={newSheetName} onChange={(e) => setNewSheetName(e.target.value)} placeholder={t('merger.newSheetNamePlaceholder') as string} disabled={isProcessing}/>
+                        <Label htmlFor="new-sheet-name" className="text-sm font-medium">{[t('merger.newSheetName')].flat().join(' ')}</Label>
+                        <Input id="new-sheet-name" value={newSheetName} onChange={(e) => setNewSheetName(e.target.value)} placeholder={[t('merger.newSheetNamePlaceholder')].flat().join(' ')} disabled={isProcessing}/>
                     </div>
                     <div className="flex items-start space-x-2">
                         <Checkbox
@@ -500,20 +500,20 @@ export default function SheetMergerPage({ onProcessingChange, onFileStateChange 
                         className="mt-1"
                         />
                         <div className="grid gap-1.5 leading-none">
-                            <Label htmlFor="add-source-column" className="font-normal">{t('merger.addSourceColumn')}</Label>
-                            <p className="text-xs text-muted-foreground">{t('merger.addSourceColumnDesc')}</p>
+                            <Label htmlFor="add-source-column" className="font-normal">{[t('merger.addSourceColumn')].flat().join(' ')}</Label>
+                            <p className="text-xs text-muted-foreground">{[t('merger.addSourceColumnDesc')].flat().join(' ')}</p>
                         </div>
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="columns-to-ignore" className="text-sm font-medium">{t('merger.ignoreColumns')}</Label>
+                        <Label htmlFor="columns-to-ignore" className="text-sm font-medium">{[t('merger.ignoreColumns')].flat().join(' ')}</Label>
                         <Input 
                             id="columns-to-ignore" 
                             value={columnsToIgnore} 
                             onChange={(e) => setColumnsToIgnore(e.target.value)} 
-                            placeholder={t('merger.ignoreColumnsPlaceholder') as string} 
+                            placeholder={[t('merger.ignoreColumnsPlaceholder')].flat().join(' ')} 
                             disabled={isProcessing}
                         />
-                        <p className="text-xs text-muted-foreground">{t('merger.ignoreColumnsDesc')}</p>
+                        <p className="text-xs text-muted-foreground">{[t('merger.ignoreColumnsDesc')].flat().join(' ')}</p>
                     </div>
                   </>
                 )}

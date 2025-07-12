@@ -330,7 +330,7 @@ export default function ExcelSheetSplitterPage({ onProcessingChange, onFileState
             const valuesToJoin = sourceColIndices.map(colIdx => (firstDataRow?.[colIdx] ?? ""));
             setGeneratedCustomHeaderText(valuesToJoin.join(customHeaderConfig.valueSeparator));
         } else {
-            setGeneratedCustomHeaderText("[No data rows found to generate example header]");
+            setGeneratedCustomHeaderText([t('splitter.noDataForHeader')].flat().join(' '));
         }
       } else {
           setGeneratedCustomHeaderText(null);
@@ -338,7 +338,7 @@ export default function ExcelSheetSplitterPage({ onProcessingChange, onFileState
 
       const colIndexToGroup = parseInt(columnIdentifier, 10);
        if (isNaN(colIndexToGroup)) {
-          toast({ title: [t('toast.errorReadingFile')].flat().join(' '), description: "Invalid column identifier selected.", variant: "destructive" });
+          toast({ title: [t('toast.errorReadingFile')].flat().join(' '), description: [t('splitter.toast.invalidColumnIdentifier')].flat().join(' '), variant: "destructive" });
           setIsProcessing(false);
           return;
       }
@@ -372,10 +372,10 @@ export default function ExcelSheetSplitterPage({ onProcessingChange, onFileState
 
     } catch (error) {
       console.error('Error processing file:', error);
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+      const errorMessage = error instanceof Error ? error.message : [t('splitter.toast.errorUnknown')].flat().join(' ');
       toast({
         title: [t('toast.errorReadingFile')].flat().join(' '),
-        description: `${[t('toast.errorReadingFile')].flat().join(' ')} ${errorMessage}`,
+        description: `${[t('splitter.toast.errorPrefix')].flat().join(' ')} ${errorMessage}`,
         variant: 'destructive',
       });
     } finally {
@@ -419,7 +419,7 @@ export default function ExcelSheetSplitterPage({ onProcessingChange, onFileState
       
       const onProgress = (status: { groupKey: string, currentGroup: number, totalGroups: number }) => {
         if (cancellationRequested.current) throw new Error('Cancelled by user.');
-        setProcessingStatus(`Creating sheet ${status.currentGroup} of ${status.totalGroups}: ${status.groupKey}`);
+        setProcessingStatus([t('splitter.toast.creatingSheet', {current: status.currentGroup, total: status.totalGroups, groupKey: status.groupKey})].flat().join(' '));
       };
 
       const newWorkbook = createWorkbookFromGroupedData(
@@ -438,11 +438,11 @@ export default function ExcelSheetSplitterPage({ onProcessingChange, onFileState
       XLSX.writeFile(newWorkbook, `${originalFileName}_split_custom.${outputFormat}`, { compression: true, cellStyles: true, bookType: outputFormat });
       toast({
         title: [t('toast.downloadSuccess')].flat().join(' '),
-        description: [t('splitter.downloadBtn')].flat().join(' '),
+        description: [t('splitter.toast.downloadReady')].flat().join(' '),
       });
     } catch (error) {
       console.error('Error creating or downloading workbook:', error);
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred during download.';
+      const errorMessage = error instanceof Error ? error.message : [t('splitter.toast.errorDownload')].flat().join(' ');
       
       if (errorMessage !== 'Cancelled by user.') {
         toast({ title: [t('toast.downloadError')].flat().join(' '), description: errorMessage, variant: 'destructive' });
@@ -473,17 +473,17 @@ export default function ExcelSheetSplitterPage({ onProcessingChange, onFileState
       <CardHeader>
         <div className="flex items-center space-x-2 mb-2">
           <FileSpreadsheet className="h-8 w-8 text-primary" />
-          <CardTitle className="text-2xl font-headline">{[t('splitter.title')].flat().join(' ')}</CardTitle>
+          <CardTitle className="text-2xl font-headline">{t('splitter.title')}</CardTitle>
         </div>
         <CardDescription className="font-body">
-          {[t('splitter.description')].flat().join(' ')}
+          {t('splitter.description')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-2">
           <Label htmlFor="file-upload" className="flex items-center space-x-2 text-sm font-medium">
             <UploadCloud className="h-5 w-5" />
-            <span>{[t('splitter.uploadStep')].flat().join(' ')}</span>
+            <span>{t('splitter.uploadStep')}</span>
           </Label>
           <Input
             id="file-upload"
@@ -500,11 +500,11 @@ export default function ExcelSheetSplitterPage({ onProcessingChange, onFileState
           <div className="space-y-2">
             <Label htmlFor="sheet-select" className="flex items-center space-x-2 text-sm font-medium">
               <ListFilter className="h-5 w-5" />
-              <span>{[t('splitter.selectSheetStep')].flat().join(' ')}</span>
+              <span>{t('splitter.selectSheetStep')}</span>
             </Label>
             <Select value={selectedSheet} onValueChange={setSelectedSheet} disabled={isProcessing || sheetNames.length === 0}>
               <SelectTrigger id="sheet-select">
-                <SelectValue placeholder={[t('common.selectSheet')].flat().join(' ')} />
+                <SelectValue placeholder={t('common.selectSheet') as string} />
               </SelectTrigger>
               <SelectContent>
                 {sheetNames.map((name) => (
@@ -521,7 +521,7 @@ export default function ExcelSheetSplitterPage({ onProcessingChange, onFileState
             <div className="space-y-2">
             <Label htmlFor="header-row-number" className="flex items-center space-x-2 text-sm font-medium">
                 <FileSpreadsheet className="h-5 w-5" />
-                <span>{[t('splitter.headerRowStep')].flat().join(' ')}</span>
+                <span>{t('splitter.headerRowStep')}</span>
             </Label>
             <Input
                 id="header-row-number"
@@ -533,10 +533,10 @@ export default function ExcelSheetSplitterPage({ onProcessingChange, onFileState
                     setHeaderRowNumber(isNaN(val) || val < 1 ? 1 : val);
                 }}
                 disabled={isProcessing || !file || !selectedSheet}
-                placeholder="e.g., 1"
+                placeholder={t('splitter.identifierInputPlaceholder') as string}
             />
             <p className="text-xs text-muted-foreground">
-                {[t('splitter.headerRowDesc')].flat().join(' ')}
+                {t('splitter.headerRowDesc')}
             </p>
             </div>
         )}
@@ -552,7 +552,7 @@ export default function ExcelSheetSplitterPage({ onProcessingChange, onFileState
                 />
                 <Label htmlFor="enable-custom-header" className="flex items-center space-x-2 text-md font-semibold text-primary">
                   <PencilLine className="h-5 w-5" />
-                  <span>{[t('splitter.customHeaderStep')].flat().join(' ')}</span>
+                  <span>{t('splitter.customHeaderStep')}</span>
                 </Label>
               </CardHeader>
 
@@ -560,52 +560,52 @@ export default function ExcelSheetSplitterPage({ onProcessingChange, onFileState
                 <CardContent className="p-0">
                     <div className="space-y-4 pl-8 border-l-2 border-primary/30 ml-2 pt-4">
                       <div className="space-y-1">
-                        <Label htmlFor="custom-header-source-cols" className="text-sm font-medium">{[t('splitter.sourceCols')].flat().join(' ')}</Label>
-                        <Input id="custom-header-source-cols" type="text" value={customHeaderConfig.sourceColumnString} onChange={(e) => setCustomHeaderConfig(prev => ({ ...prev, sourceColumnString: e.target.value }))} disabled={isProcessing} placeholder="e.g., A,B,C or 1,2,3" />
-                        <p className="text-xs text-muted-foreground"><Markup text={[t('splitter.sourceColsDesc')].flat().join(' ')}/></p>
+                        <Label htmlFor="custom-header-source-cols" className="text-sm font-medium">{t('splitter.sourceCols')}</Label>
+                        <Input id="custom-header-source-cols" type="text" value={customHeaderConfig.sourceColumnString} onChange={(e) => setCustomHeaderConfig(prev => ({ ...prev, sourceColumnString: e.target.value }))} disabled={isProcessing} placeholder={t('splitter.sourceColsPlaceholder') as string} />
+                        <p className="text-xs text-muted-foreground"><Markup text={t('splitter.sourceColsDesc') as string}/></p>
                       </div>
                        <div className="space-y-1">
-                        <Label htmlFor="custom-header-separator" className="text-sm font-medium">{[t('splitter.separator')].flat().join(' ')}</Label>
-                        <Input id="custom-header-separator" type="text" value={customHeaderConfig.valueSeparator} onChange={(e) => setCustomHeaderConfig(prev => ({...prev, valueSeparator: e.target.value}))} disabled={isProcessing} placeholder="e.g.,  - " />
-                        <p className="text-xs text-muted-foreground">{[t('splitter.separatorDesc')].flat().join(' ')}</p>
+                        <Label htmlFor="custom-header-separator" className="text-sm font-medium">{t('splitter.separator')}</Label>
+                        <Input id="custom-header-separator" type="text" value={customHeaderConfig.valueSeparator} onChange={(e) => setCustomHeaderConfig(prev => ({...prev, valueSeparator: e.target.value}))} disabled={isProcessing} placeholder={t('splitter.separatorPlaceholder') as string} />
+                        <p className="text-xs text-muted-foreground">{t('splitter.separatorDesc')}</p>
                       </div>
                       <div className="space-y-1">
-                        <Label htmlFor="custom-header-insert-row" className="text-sm font-medium">{[t('splitter.insertRow')].flat().join(' ')}</Label>
-                        <Input id="custom-header-insert-row" type="number" min="1" value={customHeaderConfig.insertBeforeRow} onChange={(e) => setCustomHeaderConfig(prev => ({...prev, insertBeforeRow: Math.max(1, parseInt(e.target.value, 10) || 1)}))} disabled={isProcessing} placeholder="e.g., 1" />
-                        <p className="text-xs text-muted-foreground">{[t('splitter.insertRowDesc')].flat().join(' ')}</p>
+                        <Label htmlFor="custom-header-insert-row" className="text-sm font-medium">{t('splitter.insertRow')}</Label>
+                        <Input id="custom-header-insert-row" type="number" min="1" value={customHeaderConfig.insertBeforeRow} onChange={(e) => setCustomHeaderConfig(prev => ({...prev, insertBeforeRow: Math.max(1, parseInt(e.target.value, 10) || 1)}))} disabled={isProcessing} placeholder={t('splitter.insertRowPlaceholder') as string} />
+                        <p className="text-xs text-muted-foreground">{t('splitter.insertRowDesc')}</p>
                       </div>
                        <div className="flex items-center space-x-2 pt-2">
                         <Checkbox id="custom-header-merge-center" checked={!!customHeaderConfig.mergeAndCenter} onCheckedChange={(checked) => setCustomHeaderConfig(prev => ({ ...prev, mergeAndCenter: checked as boolean }))} disabled={isProcessing} />
-                        <Label htmlFor="custom-header-merge-center" className="text-sm font-normal">{[t('splitter.mergeAndCenter')].flat().join(' ')}</Label>
+                        <Label htmlFor="custom-header-merge-center" className="text-sm font-normal">{t('splitter.mergeAndCenter')}</Label>
                       </div>
                        <div className="grid grid-cols-2 gap-4 pt-4">
                             <div>
-                                <Label htmlFor="custom-header-font-name" className="text-sm font-medium">{[t('common.fontName')].flat().join(' ')}</Label>
+                                <Label htmlFor="custom-header-font-name" className="text-sm font-medium">{t('common.fontName')}</Label>
                                 <Input id="custom-header-font-name" type="text" value={customHeaderConfig.styleOptions.fontName || ''} onChange={(e) => setCustomHeaderConfig(prev => ({...prev, styleOptions: {...prev.styleOptions, fontName: e.target.value}}))} disabled={isProcessing} placeholder="e.g., Calibri"/>
                             </div>
                             <div>
-                                <Label htmlFor="custom-header-font-size" className="text-sm font-medium">{[t('common.fontSize')].flat().join(' ')}</Label>
+                                <Label htmlFor="custom-header-font-size" className="text-sm font-medium">{t('common.fontSize')}</Label>
                                 <Input id="custom-header-font-size" type="number" min="1" value={customHeaderConfig.styleOptions.fontSize || 12} onChange={(e) => setCustomHeaderConfig(prev => ({...prev, styleOptions: {...prev.styleOptions, fontSize: parseInt(e.target.value, 10) || 11}}))} disabled={isProcessing} />
                             </div>
                         </div>
                        <div className="grid grid-cols-2 gap-4 pt-4">
                             <div className="flex flex-col space-y-2">
-                               <div className="flex items-center space-x-2"><Checkbox id="h-format-bold" checked={!!customHeaderConfig.styleOptions.bold} onCheckedChange={(checked) => setCustomHeaderConfig(prev => ({ ...prev, styleOptions: { ...prev.styleOptions, bold: checked as boolean } }))} disabled={isProcessing} /><Label htmlFor="h-format-bold">{[t('common.bold')].flat().join(' ')}</Label></div>
-                               <div className="flex items-center space-x-2"><Checkbox id="h-format-italic" checked={!!customHeaderConfig.styleOptions.italic} onCheckedChange={(checked) => setCustomHeaderConfig(prev => ({ ...prev, styleOptions: { ...prev.styleOptions, italic: checked as boolean } }))} disabled={isProcessing} /><Label htmlFor="h-format-italic">{[t('common.italic')].flat().join(' ')}</Label></div>
-                               <div className="flex items-center space-x-2"><Checkbox id="h-format-underline" checked={!!customHeaderConfig.styleOptions.underline} onCheckedChange={(checked) => setCustomHeaderConfig(prev => ({ ...prev, styleOptions: { ...prev.styleOptions, underline: checked as boolean } }))} disabled={isProcessing} /><Label htmlFor="h-format-underline">{[t('common.underline')].flat().join(' ')}</Label></div>
+                               <div className="flex items-center space-x-2"><Checkbox id="h-format-bold" checked={!!customHeaderConfig.styleOptions.bold} onCheckedChange={(checked) => setCustomHeaderConfig(prev => ({ ...prev, styleOptions: { ...prev.styleOptions, bold: checked as boolean } }))} disabled={isProcessing} /><Label htmlFor="h-format-bold">{t('common.bold')}</Label></div>
+                               <div className="flex items-center space-x-2"><Checkbox id="h-format-italic" checked={!!customHeaderConfig.styleOptions.italic} onCheckedChange={(checked) => setCustomHeaderConfig(prev => ({ ...prev, styleOptions: { ...prev.styleOptions, italic: checked as boolean } }))} disabled={isProcessing} /><Label htmlFor="h-format-italic">{t('common.italic')}</Label></div>
+                               <div className="flex items-center space-x-2"><Checkbox id="h-format-underline" checked={!!customHeaderConfig.styleOptions.underline} onCheckedChange={(checked) => setCustomHeaderConfig(prev => ({ ...prev, styleOptions: { ...prev.styleOptions, underline: checked as boolean } }))} disabled={isProcessing} /><Label htmlFor="h-format-underline">{t('common.underline')}</Label></div>
                             </div>
                             <div className="space-y-1">
-                                <Label htmlFor="h-alignment-select">{[t('common.alignment')].flat().join(' ')}</Label>
+                                <Label htmlFor="h-alignment-select">{t('common.alignment')}</Label>
                                 <Select value={customHeaderConfig.styleOptions.alignment || 'general'} onValueChange={(value) => setCustomHeaderConfig(prev => ({...prev, styleOptions: {...prev.styleOptions, alignment: value as Alignment}}))} disabled={isProcessing}>
                                     <SelectTrigger id="h-alignment-select"><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="general">{[t('common.alignments.general')].flat().join(' ')}</SelectItem>
-                                        <SelectItem value="left">{[t('common.alignments.left')].flat().join(' ')}</SelectItem>
-                                        <SelectItem value="center">{[t('common.alignments.center')].flat().join(' ')}</SelectItem>
-                                        <SelectItem value="centerContinuous">{[t('common.alignments.centerContinuous')].flat().join(' ')}</SelectItem>
-                                        <SelectItem value="right">{[t('common.alignments.right')].flat().join(' ')}</SelectItem>
-                                        <SelectItem value="fill">{[t('common.alignments.fill')].flat().join(' ')}</SelectItem>
-                                        <SelectItem value="justify">{[t('common.alignments.justify')].flat().join(' ')}</SelectItem>
+                                        <SelectItem value="general">{t('common.alignments.general')}</SelectItem>
+                                        <SelectItem value="left">{t('common.alignments.left')}</SelectItem>
+                                        <SelectItem value="center">{t('common.alignments.center')}</SelectItem>
+                                        <SelectItem value="centerContinuous">{t('common.alignments.centerContinuous')}</SelectItem>
+                                        <SelectItem value="right">{t('common.alignments.right')}</SelectItem>
+                                        <SelectItem value="fill">{t('common.alignments.fill')}</SelectItem>
+                                        <SelectItem value="justify">{t('common.alignments.justify')}</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -626,7 +626,7 @@ export default function ExcelSheetSplitterPage({ onProcessingChange, onFileState
                 />
                 <Label htmlFor="enable-index-sheet" className="flex items-center space-x-2 text-md font-semibold text-primary">
                     <BookMarked className="h-5 w-5" />
-                    <span>{[t('splitter.indexSheetStep')].flat().join(' ')}</span>
+                    <span>{t('splitter.indexSheetStep')}</span>
                 </Label>
             </CardHeader>
 
@@ -634,43 +634,43 @@ export default function ExcelSheetSplitterPage({ onProcessingChange, onFileState
             <CardContent className="p-0">
                 <div className="space-y-4 pl-8 border-l-2 border-primary/30 ml-2 pt-4">
                     <p className="text-sm text-muted-foreground pb-2">
-                        {[t('splitter.indexSheetDesc')].flat().join(' ')}
+                        {t('splitter.indexSheetDesc')}
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                         <div className="space-y-1">
-                            <Label htmlFor="index-sheet-name" className="text-sm font-medium">{[t('splitter.indexSheetName')].flat().join(' ')}</Label>
+                            <Label htmlFor="index-sheet-name" className="text-sm font-medium">{t('splitter.indexSheetName')}</Label>
                             <Input id="index-sheet-name" value={indexSheetConfig.sheetName} onChange={(e) => setIndexSheetConfig(p => ({...p, sheetName: e.target.value}))} disabled={isProcessing} />
                         </div>
                          <div className="space-y-1">
-                            <Label htmlFor="index-header-text" className="text-sm font-medium">{[t('splitter.indexHeader')].flat().join(' ')}</Label>
+                            <Label htmlFor="index-header-text" className="text-sm font-medium">{t('splitter.indexHeader')}</Label>
                             <Input id="index-header-text" value={indexSheetConfig.headerText} onChange={(e) => setIndexSheetConfig(p => ({...p, headerText: e.target.value}))} disabled={isProcessing} />
                         </div>
                          <div className="space-y-1">
-                            <Label htmlFor="index-header-row" className="text-sm font-medium">{[t('splitter.headerRow')].flat().join(' ')}</Label>
+                            <Label htmlFor="index-header-row" className="text-sm font-medium">{t('splitter.headerRow')}</Label>
                             <Input type="number" id="index-header-row" min="1" value={indexSheetConfig.headerRow} onChange={(e) => setIndexSheetConfig(p => ({...p, headerRow: parseInt(e.target.value, 10) || 1}))} disabled={isProcessing} />
                         </div>
                          <div className="space-y-1">
-                            <Label htmlFor="index-header-col" className="text-sm font-medium">{[t('splitter.headerCol')].flat().join(' ')}</Label>
+                            <Label htmlFor="index-header-col" className="text-sm font-medium">{t('splitter.headerCol')}</Label>
                             <Input id="index-header-col" value={indexSheetConfig.headerCol} onChange={(e) => setIndexSheetConfig(p => ({...p, headerCol: e.target.value}))} disabled={isProcessing} />
                         </div>
                          <div className="space-y-1">
-                            <Label htmlFor="index-links-row" className="text-sm font-medium">{[t('splitter.linksStartRow')].flat().join(' ')}</Label>
+                            <Label htmlFor="index-links-row" className="text-sm font-medium">{t('splitter.linksStartRow')}</Label>
                             <Input type="number" id="index-links-row" min="1" value={indexSheetConfig.linksStartRow} onChange={(e) => setIndexSheetConfig(p => ({...p, linksStartRow: parseInt(e.target.value, 10) || 1}))} disabled={isProcessing} />
                         </div>
                         <div className="space-y-1">
-                            <Label htmlFor="index-links-col" className="text-sm font-medium">{[t('splitter.linksCol')].flat().join(' ')}</Label>
+                            <Label htmlFor="index-links-col" className="text-sm font-medium">{t('splitter.linksCol')}</Label>
                             <Input id="index-links-col" value={indexSheetConfig.linksCol} onChange={(e) => setIndexSheetConfig(p => ({...p, linksCol: e.target.value}))} disabled={isProcessing} />
                         </div>
                         <div className="space-y-1">
-                            <Label htmlFor="backlink-text" className="text-sm font-medium">{[t('splitter.backLinkText')].flat().join(' ')}</Label>
+                            <Label htmlFor="backlink-text" className="text-sm font-medium">{t('splitter.backLinkText')}</Label>
                             <Input id="backlink-text" value={indexSheetConfig.backLinkText} onChange={(e) => setIndexSheetConfig(p => ({...p, backLinkText: e.target.value}))} disabled={isProcessing} />
                         </div>
                         <div className="space-y-1">
-                            <Label htmlFor="backlink-row" className="text-sm font-medium">{[t('splitter.backLinkRow')].flat().join(' ')}</Label>
+                            <Label htmlFor="backlink-row" className="text-sm font-medium">{t('splitter.backLinkRow')}</Label>
                             <Input type="number" id="backlink-row" min="1" value={indexSheetConfig.backLinkRow} onChange={(e) => setIndexSheetConfig(p => ({...p, backLinkRow: parseInt(e.target.value, 10) || 1}))} disabled={isProcessing} />
                         </div>
                          <div className="space-y-1">
-                            <Label htmlFor="backlink-col" className="text-sm font-medium">{[t('splitter.backLinkCol')].flat().join(' ')}</Label>
+                            <Label htmlFor="backlink-col" className="text-sm font-medium">{t('splitter.backLinkCol')}</Label>
                             <Input id="backlink-col" value={indexSheetConfig.backLinkCol} onChange={(e) => setIndexSheetConfig(p => ({...p, backLinkCol: e.target.value}))} disabled={isProcessing} />
                         </div>
                     </div>
@@ -689,21 +689,21 @@ export default function ExcelSheetSplitterPage({ onProcessingChange, onFileState
             />
             <Label htmlFor="enable-custom-column" className="flex items-center space-x-2 text-md font-semibold text-primary">
                 <PlusCircle className="h-5 w-5" />
-                <span>{[t('splitter.customColumnStep')].flat().join(' ')}</span>
+                <span>{t('splitter.customColumnStep')}</span>
             </Label>
             </CardHeader>
             {enableCustomColumn && (
             <CardContent className="p-0">
                 <div className="space-y-4 pl-8 border-l-2 border-primary/30 ml-2 pt-4">
                 <div className="space-y-1">
-                    <Label htmlFor="custom-column-name" className="text-sm font-medium">{[t('splitter.customColumnName')].flat().join(' ')}</Label>
-                    <Input id="custom-column-name" value={customColumnConfig.name} onChange={(e) => setCustomColumnConfig(p => ({ ...p, name: e.target.value }))} disabled={isProcessing} placeholder={[t('splitter.customColumnNamePlaceholder')].flat().join(' ')}/>
+                    <Label htmlFor="custom-column-name" className="text-sm font-medium">{t('splitter.customColumnName')}</Label>
+                    <Input id="custom-column-name" value={customColumnConfig.name} onChange={(e) => setCustomColumnConfig(p => ({ ...p, name: e.target.value }))} disabled={isProcessing} placeholder={t('splitter.customColumnNamePlaceholder') as string}/>
                 </div>
                 <div className="space-y-1">
-                    <Label htmlFor="custom-column-value" className="text-sm font-medium">{[t('splitter.customColumnValue')].flat().join(' ')}</Label>
-                    <Input id="custom-column-value" value={customColumnConfig.value} onChange={(e) => setCustomColumnConfig(p => ({ ...p, value: e.target.value }))} disabled={isProcessing} placeholder={[t('splitter.customColumnValuePlaceholder')].flat().join(' ')} />
+                    <Label htmlFor="custom-column-value" className="text-sm font-medium">{t('splitter.customColumnValue')}</Label>
+                    <Input id="custom-column-value" value={customColumnConfig.value} onChange={(e) => setCustomColumnConfig(p => ({ ...p, value: e.target.value }))} disabled={isProcessing} placeholder={t('splitter.customColumnValuePlaceholder') as string} />
                     <p className="text-xs text-muted-foreground">
-                        <Markup text={[t('splitter.customColumnValueDesc')].flat().join(' ')} />
+                        <Markup text={t('splitter.customColumnValueDesc') as string} />
                     </p>
                 </div>
                 </div>
@@ -716,7 +716,7 @@ export default function ExcelSheetSplitterPage({ onProcessingChange, onFileState
           <div className="space-y-2">
             <Label htmlFor="column-order" className="flex items-center space-x-2 text-sm font-medium">
               <ListOrdered className="h-5 w-5" />
-              <span>{[t('splitter.columnOrderStep')].flat().join(' ')}</span>
+              <span>{t('splitter.columnOrderStep')}</span>
             </Label>
             <Card className="p-3 bg-secondary/20 max-h-60 overflow-y-auto">
               <ul className="space-y-1">
@@ -750,7 +750,7 @@ export default function ExcelSheetSplitterPage({ onProcessingChange, onFileState
               </ul>
             </Card>
             <p className="text-xs text-muted-foreground">
-              {[t('splitter.columnOrderDesc')].flat().join(' ')}
+              {t('splitter.columnOrderDesc')}
             </p>
           </div>
         )}
@@ -758,7 +758,7 @@ export default function ExcelSheetSplitterPage({ onProcessingChange, onFileState
         <div className="space-y-2">
           <Label htmlFor="column-name" className="flex items-center space-x-2 text-sm font-medium">
              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-key-round"><path d="M2 18v3c0 .6.4 1 1 1h4v-3h3v-3h2l1.4-1.4a6.5 6.5 0 1 0-4-4Z"/><circle cx="16.5" cy="7.5" r=".5"/></svg>
-            <span>{[t('splitter.identifierStep')].flat().join(' ')}</span>
+            <span>{t('splitter.identifierStep')}</span>
           </Label>
           {availableHeaders.length > 0 ? ( 
             <Select
@@ -767,7 +767,7 @@ export default function ExcelSheetSplitterPage({ onProcessingChange, onFileState
               disabled={isProcessing || !file || availableHeaders.length === 0}
             >
               <SelectTrigger id="column-name-select">
-                <SelectValue placeholder={[t('splitter.identifierPlaceholder')].flat().join(' ')} />
+                <SelectValue placeholder={t('splitter.identifierPlaceholder') as string} />
               </SelectTrigger>
               <SelectContent>
                 {availableHeaders.map((header) => ( 
@@ -781,14 +781,14 @@ export default function ExcelSheetSplitterPage({ onProcessingChange, onFileState
             <Input
               id="column-name-input"
               type="text"
-              placeholder={[t('splitter.identifierInputPlaceholder')].flat().join(' ')}
+              placeholder={t('splitter.identifierInputPlaceholder') as string}
               value={columnIdentifier}
               onChange={(e) => setColumnIdentifier(e.target.value)}
               disabled={isProcessing || !file}
             />
           )}
           <p className="text-xs text-muted-foreground">
-            {[t('splitter.identifierDesc')].flat().join(' ')}
+            {t('splitter.identifierDesc')}
           </p>
         </div>
 
@@ -799,25 +799,25 @@ export default function ExcelSheetSplitterPage({ onProcessingChange, onFileState
         >
           {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           <Split className="mr-2 h-5 w-5" />
-          {[t('splitter.processBtn')].flat().join(' ')}
+          {t('splitter.processBtn')}
         </Button>
 
         {processedInfo && processedInfo.length > 0 && (
           <div className="mt-6 p-4 border rounded-md bg-secondary/30">
-            <h3 className="text-lg font-semibold mb-2 font-headline">{[t('splitter.previewTitle')].flat().join(' ')}</h3>
+            <h3 className="text-lg font-semibold mb-2 font-headline">{t('splitter.previewTitle')}</h3>
              {generatedCustomHeaderText && (
                 <Alert className="mb-4">
                     <Lightbulb className="h-4 w-4" />
                     <AlertDescription>
-                        <strong>{[t('splitter.headerPreview')].flat().join(' ')}</strong> {generatedCustomHeaderText}
+                        <strong>{t('splitter.headerPreview')}</strong> {generatedCustomHeaderText}
                     </AlertDescription>
                 </Alert>
             )}
             <ul className="space-y-1 max-h-40 overflow-y-auto text-sm">
               {processedInfo.map((info) => (
                 <li key={info.name} className="flex justify-between">
-                  <span>{[t('splitter.sheet')].flat().join(' ')} <span className="font-medium">{info.name}</span></span>
-                  <span className="text-muted-foreground">{[t('splitter.rows')].flat().join(' ')} {info.rowCount}</span>
+                  <span>{t('splitter.sheet')} <span className="font-medium">{info.name}</span></span>
+                  <span className="text-muted-foreground">{t('splitter.rows')} {info.rowCount}</span>
                 </li>
               ))}
             </ul>
@@ -827,27 +827,27 @@ export default function ExcelSheetSplitterPage({ onProcessingChange, onFileState
       {processedInfo && processedInfo.length > 0 && (
         <CardFooter className="flex-col items-stretch space-y-4">
             <div className="w-full p-4 border rounded-md bg-secondary/30 space-y-4">
-                <Label className="text-md font-semibold font-headline">{[t('common.outputOptions.title')].flat().join(' ')}</Label>
+                <Label className="text-md font-semibold font-headline">{t('common.outputOptions.title')}</Label>
                 <RadioGroup value={outputFormat} onValueChange={(v) => setOutputFormat(v as any)} className="space-y-3">
                     <div>
                         <div className="flex items-center space-x-2">
                             <RadioGroupItem value="xlsx" id="format-xlsx-splitter" />
-                            <Label htmlFor="format-xlsx-splitter" className="font-normal">{[t('common.outputOptions.xlsx')].flat().join(' ')}</Label>
+                            <Label htmlFor="format-xlsx-splitter" className="font-normal">{t('common.outputOptions.xlsx')}</Label>
                         </div>
-                        <p className="text-xs text-muted-foreground pl-6 pt-1">{[t('common.outputOptions.xlsxDesc')].flat().join(' ')}</p>
+                        <p className="text-xs text-muted-foreground pl-6 pt-1">{t('common.outputOptions.xlsxDesc')}</p>
                     </div>
                     <div>
                         <div className="flex items-center space-x-2">
                             <RadioGroupItem value="xlsm" id="format-xlsm-splitter" />
-                            <Label htmlFor="format-xlsm-splitter" className="font-normal">{[t('common.outputOptions.xlsm')].flat().join(' ')}</Label>
+                            <Label htmlFor="format-xlsm-splitter" className="font-normal">{t('common.outputOptions.xlsm')}</Label>
                         </div>
-                        <p className="text-xs text-muted-foreground pl-6 pt-1">{[t('common.outputOptions.xlsmDesc')].flat().join(' ')}</p>
+                        <p className="text-xs text-muted-foreground pl-6 pt-1">{t('common.outputOptions.xlsmDesc')}</p>
                     </div>
                 </RadioGroup>
                 <Alert variant="default" className="mt-2">
                     <Lightbulb className="h-4 w-4" />
                     <AlertDescription>
-                        {[t('common.outputOptions.recommendation')].flat().join(' ')}
+                        {t('common.outputOptions.recommendation')}
                     </AlertDescription>
                 </Alert>
             </div>
@@ -858,7 +858,7 @@ export default function ExcelSheetSplitterPage({ onProcessingChange, onFileState
           >
             {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             <Download className="mr-2 h-5 w-5" />
-            {[t('splitter.downloadBtn')].flat().join(' ')}
+            {t('splitter.downloadBtn')}
           </Button>
         </CardFooter>
       )}

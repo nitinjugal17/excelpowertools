@@ -128,7 +128,7 @@ export default function TextFormatterPage({ onProcessingChange, onFileStateChang
           setSelectedSheets(initialSelection);
         } catch (error) {
           console.error("Error reading sheet names:", error);
-          toast({ title: [t('toast.errorReadingFile')].flat().join(' '), description: [t('toast.errorReadingSheets')].flat().join(' '), variant: "destructive" });
+          toast({ title: t('toast.errorReadingFile') as string, description: t('toast.errorReadingSheets') as string, variant: "destructive" });
         } finally {
           setIsProcessing(false);
         }
@@ -165,7 +165,7 @@ export default function TextFormatterPage({ onProcessingChange, onFileStateChang
     const selectedFile = event.target.files?.[0];
     if (selectedFile) {
       if (!selectedFile.name.match(/\.(xlsx|xls|xlsm)$/)) {
-        toast({ title: [t('toast.invalidFileType')].flat().join(' '), description: [t('toast.invalidFileTypeDesc')].flat().join(' '), variant: 'destructive' });
+        toast({ title: t('toast.invalidFileType') as string, description: t('toast.invalidFileTypeDesc') as string, variant: 'destructive' });
         setFile(null);
         return;
       }
@@ -197,7 +197,7 @@ export default function TextFormatterPage({ onProcessingChange, onFileStateChang
   
   const handleCancel = () => {
     cancellationRequested.current = true;
-    setProcessingStatus([t('common.cancelling')].flat().join(' '));
+    setProcessingStatus(t('common.cancelling') as string);
   };
 
   const handleProcess = useCallback(async () => {
@@ -205,19 +205,19 @@ export default function TextFormatterPage({ onProcessingChange, onFileStateChang
     const searchTerms = searchText.split('\n').map(term => term.trim()).filter(Boolean);
 
     if (!file || sheetsToProcess.length === 0) {
-      toast({ title: [t('toast.missingInfo')].flat().join(' '), description: [t('formatter.toast.missingFileOrSheet')].flat().join(' '), variant: 'destructive' });
+      toast({ title: t('toast.missingInfo') as string, description: t('formatter.toast.missingFileOrSheet') as string, variant: 'destructive' });
       return;
     }
     if (!enableFontFormatting && !enableFillFormatting && !enableAlignmentFormatting) {
-        toast({ title: [t('toast.missingInfo')].flat().join(' '), description: [t('formatter.toast.noFormatting')].flat().join(' '), variant: 'destructive' });
+        toast({ title: t('toast.missingInfo') as string, description: t('formatter.toast.noFormatting') as string, variant: 'destructive' });
         return;
     }
     if (enableFillFormatting && !isValidHex(fillColor)) {
-      toast({ title: [t('toast.errorReadingFile')].flat().join(' '), description: [t('formatter.toast.invalidFill')].flat().join(' '), variant: 'destructive'});
+      toast({ title: t('toast.errorReadingFile') as string, description: t('formatter.toast.invalidFill') as string, variant: 'destructive'});
       return;
     }
      if (enableFontFormatting && fontConfig.color && !isValidHex(fontConfig.color)) {
-      toast({ title: [t('toast.errorReadingFile')].flat().join(' '), description: [t('formatter.toast.invalidFontColor')].flat().join(' '), variant: 'destructive'});
+      toast({ title: t('toast.errorReadingFile') as string, description: t('formatter.toast.invalidFontColor') as string, variant: 'destructive'});
       return;
     }
 
@@ -246,7 +246,7 @@ export default function TextFormatterPage({ onProcessingChange, onFileStateChang
 
       const onProgress = (status: { sheetName: string; currentSheet: number; totalSheets: number; cellsFormatted: number }) => {
         if (cancellationRequested.current) throw new Error('Cancelled by user.');
-        setProcessingStatus([t('formatter.toast.processing', {current: status.currentSheet, total: status.totalSheets, sheetName: status.sheetName, count: status.cellsFormatted})].flat().join(' '));
+        setProcessingStatus(t('formatter.toast.processing', {current: status.currentSheet, total: status.totalSheets, sheetName: status.sheetName, count: status.cellsFormatted}) as string);
       };
       
       const { workbook: newWb, cellsFormatted } = findAndFormatText(
@@ -261,17 +261,17 @@ export default function TextFormatterPage({ onProcessingChange, onFileStateChang
       setCellsFormattedCount(cellsFormatted);
       
       toast({
-        title: [t('toast.processingComplete')].flat().join(' '),
-        description: [t('formatter.toast.success', { count: cellsFormatted })].flat().join(' '),
+        title: t('toast.processingComplete') as string,
+        description: t('formatter.toast.success', { count: cellsFormatted }) as string,
         action: <CheckCircle2 className="text-green-500" />,
       });
 
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : [t('formatter.toast.error')].flat().join(' ');
+      const errorMessage = error instanceof Error ? error.message : t('formatter.toast.error') as string;
       if (errorMessage !== 'Cancelled by user.') {
-        toast({ title: [t('toast.errorReadingFile')].flat().join(' '), description: errorMessage, variant: 'destructive' });
+        toast({ title: t('toast.errorReadingFile') as string, description: errorMessage, variant: 'destructive' });
       } else {
-        toast({ title: [t('toast.cancelledTitle')].flat().join(' '), description: [t('toast.cancelledDesc')].flat().join(' '), variant: 'default' });
+        toast({ title: t('toast.cancelledTitle') as string, description: t('toast.cancelledDesc') as string, variant: 'default' });
       }
     } finally {
       setIsProcessing(false);
@@ -282,15 +282,15 @@ export default function TextFormatterPage({ onProcessingChange, onFileStateChang
   
   const handleDownloadFile = useCallback(() => {
      if (!processedWorkbook || !file) {
-       toast({ title: [t('toast.noFileToDownload')].flat().join(' '), description: [t('formatter.toast.noFile')].flat().join(' '), variant: "destructive" });
+       toast({ title: t('toast.noFileToDownload') as string, description: t('formatter.toast.noFile') as string, variant: "destructive" });
        return;
      }
      try {
         const originalFileName = file.name.substring(0, file.name.lastIndexOf('.'));
         XLSX.writeFile(processedWorkbook, `${originalFileName}_formatted.${outputFormat}`, { compression: true, bookType: outputFormat, cellStyles: true });
-        toast({ title: [t('toast.downloadSuccess')].flat().join(' ') });
+        toast({ title: t('toast.downloadSuccess') as string });
      } catch (error) {
-        toast({ title: [t('toast.downloadError')].flat().join(' '), description: [t('toast.downloadError')].flat().join(' '), variant: 'destructive' });
+        toast({ title: t('toast.downloadError') as string, description: t('toast.downloadError') as string, variant: 'destructive' });
      }
   }, [processedWorkbook, file, toast, t, outputFormat]);
 
@@ -303,28 +303,28 @@ export default function TextFormatterPage({ onProcessingChange, onFileStateChang
         <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center z-10 rounded-lg space-y-4">
             <div className="flex items-center gap-2 text-muted-foreground">
             <Loader2 className="h-6 w-6 animate-spin" />
-            <span className="text-lg font-medium">{processingStatus || [t('common.processing')].flat().join(' ')}</span>
+            <span className="text-lg font-medium">{processingStatus || t('common.processing')}</span>
             </div>
             <Button variant="destructive" onClick={handleCancel}>
                 <XCircle className="mr-2 h-4 w-4"/>
-                {[t('common.cancel')].flat().join(' ')}
+                {t('common.cancel')}
             </Button>
         </div>
       )}
       <CardHeader>
         <div className="flex items-center space-x-2 mb-2">
           <Paintbrush className="h-8 w-8 text-primary" />
-          <CardTitle className="text-2xl font-headline">{[t('formatter.title')].flat().join(' ')}</CardTitle>
+          <CardTitle className="text-2xl font-headline">{t('formatter.title')}</CardTitle>
         </div>
         <CardDescription className="font-body">
-          {[t('formatter.description')].flat().join(' ')}
+          {t('formatter.description')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-2">
           <Label htmlFor="file-upload-formatter" className="flex items-center space-x-2 text-sm font-medium">
             <UploadCloud className="h-5 w-5" />
-            <span>{[t('formatter.uploadStep')].flat().join(' ')}</span>
+            <span>{t('formatter.uploadStep')}</span>
           </Label>
           <Input
             id="file-upload-formatter"
@@ -340,7 +340,7 @@ export default function TextFormatterPage({ onProcessingChange, onFileStateChang
           <div className="space-y-3">
             <Label className="flex items-center space-x-2 text-sm font-medium mb-2">
               <ListChecks className="h-5 w-5" />
-              <span>{[t('formatter.selectSheetsStep')].flat().join(' ')}</span>
+              <span>{t('formatter.selectSheetsStep')}</span>
             </Label>
             <div className="flex items-center space-x-2 mb-2 p-2 border rounded-md bg-secondary/20">
               <Checkbox
@@ -350,20 +350,20 @@ export default function TextFormatterPage({ onProcessingChange, onFileStateChang
                 disabled={isProcessing}
               />
               <Label htmlFor="select-all-sheets-formatter" className="text-sm font-medium flex-grow">
-                {[t('common.selectAll')].flat().join(' ')} ({[t('common.selectedCount', {selected: Object.values(selectedSheets).filter(Boolean).length, total: sheetNames.length})].flat().join(' ')})
+                {t('common.selectAll')} ({t('common.selectedCount', {selected: Object.values(selectedSheets).filter(Boolean).length, total: sheetNames.length})})
               </Label>
               {sheetNames.length > 50 && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" disabled={isProcessing}>
-                        {[t('common.partial')].flat().join(' ')}
+                        {t('common.partial')}
                         <ChevronDown className="ml-1 h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
-                    <DropdownMenuItem onSelect={() => handlePartialSelection(50)}>{[t('common.first50')].flat().join(' ')}</DropdownMenuItem>
-                    {sheetNames.length >= 100 && <DropdownMenuItem onSelect={() => handlePartialSelection(100)}>{[t('common.first100')].flat().join(' ')}</DropdownMenuItem>}
-                    {sheetNames.length >= 150 && <DropdownMenuItem onSelect={() => handlePartialSelection(150)}>{[t('common.first150')].flat().join(' ')}</DropdownMenuItem>}
+                    <DropdownMenuItem onSelect={() => handlePartialSelection(50)}>{t('common.first50')}</DropdownMenuItem>
+                    {sheetNames.length >= 100 && <DropdownMenuItem onSelect={() => handlePartialSelection(100)}>{t('common.first100')}</DropdownMenuItem>}
+                    {sheetNames.length >= 150 && <DropdownMenuItem onSelect={() => handlePartialSelection(150)}>{t('common.first150')}</DropdownMenuItem>}
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
@@ -387,15 +387,15 @@ export default function TextFormatterPage({ onProcessingChange, onFileStateChang
         )}
 
         <div className="space-y-2">
-            <Label className="flex items-center space-x-2 text-sm font-medium">{[t('formatter.searchMode')].flat().join(' ')}</Label>
+            <Label className="flex items-center space-x-2 text-sm font-medium">{t('formatter.searchMode')}</Label>
             <RadioGroup value={searchMode} onValueChange={(v) => setSearchMode(v as any)} className="grid grid-cols-2 gap-2">
                 <Label htmlFor="mode-text" className="p-2 border rounded-md has-[:checked]:border-primary has-[:checked]:bg-primary/10 cursor-pointer flex items-center justify-center gap-2">
                     <RadioGroupItem value="text" id="mode-text" />
-                    {[t('formatter.modeText')].flat().join(' ')}
+                    {t('formatter.modeText')}
                 </Label>
                 <Label htmlFor="mode-regex" className="p-2 border rounded-md has-[:checked]:border-primary has-[:checked]:bg-primary/10 cursor-pointer flex items-center justify-center gap-2">
                     <RadioGroupItem value="regex" id="mode-regex" />
-                    {[t('formatter.modeRegex')].flat().join(' ')}
+                    {t('formatter.modeRegex')}
                 </Label>
             </RadioGroup>
         </div>
@@ -403,25 +403,25 @@ export default function TextFormatterPage({ onProcessingChange, onFileStateChang
         <div className="space-y-2">
             <Label htmlFor="search-text" className="flex items-center space-x-2 text-sm font-medium">
                 <Type className="h-5 w-5" />
-                <span>{[t('formatter.findStep')].flat().join(' ')}</span>
+                <span>{t('formatter.findStep')}</span>
             </Label>
             <Textarea
                 id="search-text" 
                 value={searchText} 
                 onChange={e => setSearchText(e.target.value)} 
                 disabled={isProcessing || !file}
-                placeholder={[t('formatter.findPlaceholder')].flat().join(' ')}
+                placeholder={t('formatter.findPlaceholder') as string}
                 rows={4}
             />
-            <p className="text-xs text-muted-foreground">{[t('formatter.findDesc')].flat().join(' ')}</p>
+            <p className="text-xs text-muted-foreground">{t('formatter.findDesc')}</p>
             <div className="flex items-center gap-4 pt-2">
                  <div className="flex items-center space-x-2">
                     <Checkbox id="match-case" checked={matchCase} onCheckedChange={c => setMatchCase(c as boolean)} disabled={isProcessing || !file} />
-                    <Label htmlFor="match-case" className="flex items-center space-x-1 font-normal"><CaseSensitive className="h-4 w-4"/><span>{[t('formatter.matchCase')].flat().join(' ')}</span></Label>
+                    <Label htmlFor="match-case" className="flex items-center space-x-1 font-normal"><CaseSensitive className="h-4 w-4"/><span>{t('formatter.matchCase')}</span></Label>
                 </div>
                  <div className="flex items-center space-x-2">
                     <Checkbox id="match-cell" checked={matchEntireCell} onCheckedChange={c => setMatchEntireCell(c as boolean)} disabled={isProcessing || !file} />
-                    <Label htmlFor="match-cell" className="flex items-center space-x-1 font-normal"><WholeWord className="h-4 w-4"/><span>{[t('formatter.matchEntireCell')].flat().join(' ')}</span></Label>
+                    <Label htmlFor="match-cell" className="flex items-center space-x-1 font-normal"><WholeWord className="h-4 w-4"/><span>{t('formatter.matchEntireCell')}</span></Label>
                 </div>
             </div>
         </div>
@@ -429,9 +429,9 @@ export default function TextFormatterPage({ onProcessingChange, onFileStateChang
         {searchMode === 'regex' && Array.isArray(regexExamples) && (
             <Alert>
                 <HelpCircle className="h-4 w-4" />
-                <AlertTitle>{[t('formatter.regexTips.title')].flat().join(' ')}</AlertTitle>
+                <AlertTitle>{t('formatter.regexTips.title')}</AlertTitle>
                 <AlertDescription className="pt-2">
-                    <p className="pb-4">{[t('formatter.regexTips.description')].flat().join(' ')}</p>
+                    <p className="pb-4">{t('formatter.regexTips.description')}</p>
                     <Accordion type="single" collapsible className="w-full">
                         {regexExamples.map((item: any, index: number) => (
                             <AccordionItem value={`item-${index}`} key={index}>
@@ -439,7 +439,7 @@ export default function TextFormatterPage({ onProcessingChange, onFileStateChang
                                 <AccordionContent className="space-y-2">
                                     <p className="text-sm text-muted-foreground">{item.description}</p>
                                     <pre className="text-xs p-2 bg-muted rounded-md font-code"><code>{item.pattern}</code></pre>
-                                    <p className="text-xs text-muted-foreground italic">{[t('formatter.regexTips.exampleLabel')].flat().join(' ')} {item.example}</p>
+                                    <p className="text-xs text-muted-foreground italic">{t('formatter.regexTips.exampleLabel')} {item.example}</p>
                                 </AccordionContent>
                             </AccordionItem>
                         ))}
@@ -453,8 +453,8 @@ export default function TextFormatterPage({ onProcessingChange, onFileStateChang
                 <div className="flex items-start space-x-3">
                   <Checkbox id="enable-range" checked={enableRange} onCheckedChange={c => setEnableRange(c as boolean)} className="mt-1" />
                   <div className="grid gap-1.5 leading-none w-full">
-                    <Label htmlFor="enable-range" className="text-md font-semibold">{[t('formatter.rangeStep')].flat().join(' ')}</Label>
-                    <p className="text-xs text-muted-foreground">{[t('formatter.rangeDesc')].flat().join(' ')}</p>
+                    <Label htmlFor="enable-range" className="text-md font-semibold">{t('formatter.rangeStep')}</Label>
+                    <p className="text-xs text-muted-foreground">{t('formatter.rangeDesc')}</p>
                   </div>
                 </div>
             </CardHeader>
@@ -462,20 +462,20 @@ export default function TextFormatterPage({ onProcessingChange, onFileStateChang
                 <CardContent className="p-0 pt-4">
                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="start-row" className="flex items-center space-x-2 text-sm"><Rows className="h-4 w-4" /><span>{[t('formatter.startRow')].flat().join(' ')}</span></Label>
+                            <Label htmlFor="start-row" className="flex items-center space-x-2 text-sm"><Rows className="h-4 w-4" /><span>{t('formatter.startRow')}</span></Label>
                             <Input id="start-row" type="number" min="1" value={rangeConfig.startRow} onChange={e => setRangeConfig(p => ({...p, startRow: parseInt(e.target.value, 10) || 1}))} />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="end-row" className="flex items-center space-x-2 text-sm"><Rows className="h-4 w-4" /><span>{[t('formatter.endRow')].flat().join(' ')}</span></Label>
+                            <Label htmlFor="end-row" className="flex items-center space-x-2 text-sm"><Rows className="h-4 w-4" /><span>{t('formatter.endRow')}</span></Label>
                             <Input id="end-row" type="number" min="1" value={rangeConfig.endRow} onChange={e => setRangeConfig(p => ({...p, endRow: parseInt(e.target.value, 10) || 1}))} />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="start-col" className="flex items-center space-x-2 text-sm"><Columns className="h-4 w-4" /><span>{[t('formatter.startCol')].flat().join(' ')}</span></Label>
-                            <Input id="start-col" value={rangeConfig.startCol} onChange={e => setRangeConfig(p => ({...p, startCol: e.target.value.toUpperCase()}))} placeholder={[t('formatter.startColPlaceholder')].flat().join(' ')}/>
+                            <Label htmlFor="start-col" className="flex items-center space-x-2 text-sm"><Columns className="h-4 w-4" /><span>{t('formatter.startCol')}</span></Label>
+                            <Input id="start-col" value={rangeConfig.startCol} onChange={e => setRangeConfig(p => ({...p, startCol: e.target.value.toUpperCase()}))} placeholder={t('formatter.startColPlaceholder') as string}/>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="end-col" className="flex items-center space-x-2 text-sm"><Columns className="h-4 w-4" /><span>{[t('formatter.endCol')].flat().join(' ')}</span></Label>
-                            <Input id="end-col" value={rangeConfig.endCol} onChange={e => setRangeConfig(p => ({...p, endCol: e.target.value.toUpperCase()}))} placeholder={[t('formatter.endColPlaceholder')].flat().join(' ')}/>
+                            <Label htmlFor="end-col" className="flex items-center space-x-2 text-sm"><Columns className="h-4 w-4" /><span>{t('formatter.endCol')}</span></Label>
+                            <Input id="end-col" value={rangeConfig.endCol} onChange={e => setRangeConfig(p => ({...p, endCol: e.target.value.toUpperCase()}))} placeholder={t('formatter.endColPlaceholder') as string}/>
                         </div>
                    </div>
                 </CardContent>
@@ -486,25 +486,25 @@ export default function TextFormatterPage({ onProcessingChange, onFileStateChang
           <CardHeader className="p-0 pb-4">
             <Label className="flex items-center space-x-2 text-md font-semibold text-primary">
               <Palette className="h-5 w-5" />
-              <span>{[t('formatter.formatStep')].flat().join(' ')}</span>
+              <span>{t('formatter.formatStep')}</span>
             </Label>
           </CardHeader>
           <CardContent className="p-0 space-y-4">
              <div className="flex items-start space-x-3">
               <Checkbox id="enable-font" checked={enableFontFormatting} onCheckedChange={c => setEnableFontFormatting(c as boolean)} className="mt-1" />
                <div className="grid gap-2 leading-none w-full">
-                <Label htmlFor="enable-font">{[t('formatter.fontFormatting')].flat().join(' ')}</Label>
+                <Label htmlFor="enable-font">{t('formatter.fontFormatting')}</Label>
                 {enableFontFormatting && <Card className="p-4 mt-2 space-y-4 bg-background">
                   <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-2"><Checkbox id="font-bold" checked={!!fontConfig.bold} onCheckedChange={c => setFontConfig(p => ({...p, bold: c as boolean}))} /><Label htmlFor="font-bold" className="font-normal">{[t('common.bold')].flat().join(' ')}</Label></div>
-                    <div className="flex items-center space-x-2"><Checkbox id="font-italic" checked={!!fontConfig.italic} onCheckedChange={c => setFontConfig(p => ({...p, italic: c as boolean}))} /><Label htmlFor="font-italic" className="font-normal">{[t('common.italic')].flat().join(' ')}</Label></div>
-                    <div className="flex items-center space-x-2"><Checkbox id="font-underline" checked={!!fontConfig.underline} onCheckedChange={c => setFontConfig(p => ({...p, underline: c as boolean}))} /><Label htmlFor="font-underline" className="font-normal">{[t('common.underline')].flat().join(' ')}</Label></div>
+                    <div className="flex items-center space-x-2"><Checkbox id="font-bold" checked={!!fontConfig.bold} onCheckedChange={c => setFontConfig(p => ({...p, bold: c as boolean}))} /><Label htmlFor="font-bold" className="font-normal">{t('common.bold')}</Label></div>
+                    <div className="flex items-center space-x-2"><Checkbox id="font-italic" checked={!!fontConfig.italic} onCheckedChange={c => setFontConfig(p => ({...p, italic: c as boolean}))} /><Label htmlFor="font-italic" className="font-normal">{t('common.italic')}</Label></div>
+                    <div className="flex items-center space-x-2"><Checkbox id="font-underline" checked={!!fontConfig.underline} onCheckedChange={c => setFontConfig(p => ({...p, underline: c as boolean}))} /><Label htmlFor="font-underline" className="font-normal">{t('common.underline')}</Label></div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div><Label htmlFor="font-name" className="text-sm">{[t('common.fontName')].flat().join(' ')}</Label><Input id="font-name" value={fontConfig.name || ''} onChange={e => setFontConfig(p => ({...p, name: e.target.value}))} placeholder="Calibri" /></div>
-                    <div><Label htmlFor="font-size" className="text-sm">{[t('common.fontSize')].flat().join(' ')}</Label><Input id="font-size" type="number" min="1" value={fontConfig.size || 11} onChange={e => setFontConfig(p => ({...p, size: parseInt(e.target.value, 10) || 11}))} /></div>
+                    <div><Label htmlFor="font-name" className="text-sm">{t('common.fontName')}</Label><Input id="font-name" value={fontConfig.name || ''} onChange={e => setFontConfig(p => ({...p, name: e.target.value}))} placeholder="Calibri" /></div>
+                    <div><Label htmlFor="font-size" className="text-sm">{t('common.fontSize')}</Label><Input id="font-size" type="number" min="1" value={fontConfig.size || 11} onChange={e => setFontConfig(p => ({...p, size: parseInt(e.target.value, 10) || 11}))} /></div>
                   </div>
-                  <div><Label htmlFor="font-color" className="text-sm">{[t('updater.fontColorHex')].flat().join(' ')}</Label><Input id="font-color" value={fontConfig.color || ''} onChange={e => setFontConfig(p => ({...p, color: e.target.value.replace('#', '')}))} placeholder="000000" /></div>
+                  <div><Label htmlFor="font-color" className="text-sm">{t('updater.fontColorHex')}</Label><Input id="font-color" value={fontConfig.color || ''} onChange={e => setFontConfig(p => ({...p, color: e.target.value.replace('#', '')}))} placeholder="000000" /></div>
                 </Card>}
               </div>
             </div>
@@ -512,9 +512,9 @@ export default function TextFormatterPage({ onProcessingChange, onFileStateChang
             <div className="flex items-start space-x-3">
               <Checkbox id="enable-fill" checked={enableFillFormatting} onCheckedChange={c => setEnableFillFormatting(c as boolean)} className="mt-1" />
               <div className="grid gap-2 leading-none w-full">
-                <Label htmlFor="enable-fill">{[t('formatter.fillFormatting')].flat().join(' ')}</Label>
+                <Label htmlFor="enable-fill">{t('formatter.fillFormatting')}</Label>
                 {enableFillFormatting && <Card className="p-4 mt-2 space-y-2 bg-background">
-                  <div><Label htmlFor="fill-color" className="text-sm">{[t('formatter.fillColor')].flat().join(' ')}</Label><Input id="fill-color" value={fillColor || ''} onChange={e => setFillColor(e.target.value.replace('#', ''))} placeholder="FFFF00" /></div>
+                  <div><Label htmlFor="fill-color" className="text-sm">{t('formatter.fillColor')}</Label><Input id="fill-color" value={fillColor || ''} onChange={e => setFillColor(e.target.value.replace('#', ''))} placeholder="FFFF00" /></div>
                 </Card>}
               </div>
             </div>
@@ -522,32 +522,32 @@ export default function TextFormatterPage({ onProcessingChange, onFileStateChang
             <div className="flex items-start space-x-3">
               <Checkbox id="enable-align" checked={enableAlignmentFormatting} onCheckedChange={c => setEnableAlignmentFormatting(c as boolean)} className="mt-1" />
               <div className="grid gap-2 leading-none w-full">
-                <Label htmlFor="enable-align">{[t('formatter.alignmentFormatting')].flat().join(' ')}</Label>
+                <Label htmlFor="enable-align">{t('formatter.alignmentFormatting')}</Label>
                 {enableAlignmentFormatting && <Card className="p-4 mt-2 grid grid-cols-2 gap-4 bg-background">
                    <div>
-                    <Label htmlFor="h-align" className="text-sm">{[t('formatter.horizontal')].flat().join(' ')}</Label>
+                    <Label htmlFor="h-align" className="text-sm">{t('formatter.horizontal')}</Label>
                     <Select value={alignmentConfig.horizontal || 'general'} onValueChange={v => setAlignmentConfig(p => ({...p, horizontal: v as HorizontalAlignment}))}>
                         <SelectTrigger id="h-align"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="general">{[t('common.alignments.general')].flat().join(' ')}</SelectItem>
-                            <SelectItem value="left">{[t('common.alignments.left')].flat().join(' ')}</SelectItem>
-                            <SelectItem value="center">{[t('common.alignments.center')].flat().join(' ')}</SelectItem>
-                            <SelectItem value="right">{[t('common.alignments.right')].flat().join(' ')}</SelectItem>
-                            <SelectItem value="fill">{[t('common.alignments.fill')].flat().join(' ')}</SelectItem>
-                            <SelectItem value="justify">{[t('common.alignments.justify')].flat().join(' ')}</SelectItem>
+                            <SelectItem value="general">{t('common.alignments.general')}</SelectItem>
+                            <SelectItem value="left">{t('common.alignments.left')}</SelectItem>
+                            <SelectItem value="center">{t('common.alignments.center')}</SelectItem>
+                            <SelectItem value="right">{t('common.alignments.right')}</SelectItem>
+                            <SelectItem value="fill">{t('common.alignments.fill')}</SelectItem>
+                            <SelectItem value="justify">{t('common.alignments.justify')}</SelectItem>
                         </SelectContent>
                     </Select>
                    </div>
                    <div>
-                    <Label htmlFor="v-align" className="text-sm">{[t('formatter.vertical')].flat().join(' ')}</Label>
+                    <Label htmlFor="v-align" className="text-sm">{t('formatter.vertical')}</Label>
                      <Select value={alignmentConfig.vertical || 'center'} onValueChange={v => setAlignmentConfig(p => ({...p, vertical: v as VerticalAlignment}))}>
                         <SelectTrigger id="v-align"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="top">{[t('common.alignments.top')].flat().join(' ')}</SelectItem>
-                            <SelectItem value="center">{[t('common.alignments.center')].flat().join(' ')}</SelectItem>
-                            <SelectItem value="bottom">{[t('common.alignments.bottom')].flat().join(' ')}</SelectItem>
-                            <SelectItem value="justify">{[t('common.alignments.justify')].flat().join(' ')}</SelectItem>
-                            <SelectItem value="distributed">{[t('common.alignments.distributed')].flat().join(' ')}</SelectItem>
+                            <SelectItem value="top">{t('common.alignments.top')}</SelectItem>
+                            <SelectItem value="center">{t('common.alignments.center')}</SelectItem>
+                            <SelectItem value="bottom">{t('common.alignments.bottom')}</SelectItem>
+                            <SelectItem value="justify">{t('common.alignments.justify')}</SelectItem>
+                            <SelectItem value="distributed">{t('common.alignments.distributed')}</SelectItem>
                         </SelectContent>
                     </Select>
                    </div>
@@ -561,7 +561,7 @@ export default function TextFormatterPage({ onProcessingChange, onFileStateChang
           <div className="space-y-2">
             <Label className="flex items-center space-x-2 text-sm font-medium">
               <ScrollText className="h-5 w-5" />
-              <span>{[t('formatter.vbsPreviewStep')].flat().join(' ')}</span>
+              <span>{t('updater.vbsPreviewStep')}</span>
             </Label>
             <Card className="bg-secondary/20">
               <CardContent className="p-0">
@@ -571,58 +571,58 @@ export default function TextFormatterPage({ onProcessingChange, onFileStateChang
               </CardContent>
             </Card>
              <p className="text-xs text-muted-foreground">
-              {[t('formatter.vbsPreviewDesc')].flat().join(' ')}
+              {t('updater.vbsPreviewDesc')}
             </p>
           </div>
         )}
 
         <Button onClick={handleProcess} disabled={isProcessButtonDisabled} className="w-full">
           {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Paintbrush className="mr-2 h-5 w-5" />}
-          {[t('formatter.processBtn')].flat().join(' ')}
+          {t('formatter.processBtn')}
         </Button>
       </CardContent>
 
       {cellsFormattedCount !== null && (
         <CardFooter className="flex-col space-y-4 items-stretch">
           <div className="p-4 border rounded-md bg-secondary/30">
-            <h3 className="text-lg font-semibold mb-2 font-headline">{[t('formatter.resultsTitle')].flat().join(' ')}</h3>
+            <h3 className="text-lg font-semibold mb-2 font-headline">{t('formatter.resultsTitle')}</h3>
             {cellsFormattedCount > 0 ? (
-              <p>{[t('formatter.resultsFound', { count: cellsFormattedCount })].flat().join(' ')}</p>
+              <p>{t('formatter.resultsFound', { count: cellsFormattedCount })}</p>
             ) : (
-              <p>{[t('formatter.resultsNotFound')].flat().join(' ')}</p>
+              <p>{t('formatter.resultsNotFound')}</p>
             )}
           </div>
           
           {processedWorkbook && cellsFormattedCount > 0 && (
             <>
                 <div className="w-full p-4 border rounded-md bg-secondary/30 space-y-4">
-                    <Label className="text-md font-semibold font-headline">{[t('common.outputOptions.title')].flat().join(' ')}</Label>
+                    <Label className="text-md font-semibold font-headline">{t('common.outputOptions.title')}</Label>
                     <RadioGroup value={outputFormat} onValueChange={(v) => setOutputFormat(v as any)} className="space-y-3">
                         <div>
                             <div className="flex items-center space-x-2">
                                 <RadioGroupItem value="xlsx" id="format-xlsx-formatter" />
-                                <Label htmlFor="format-xlsx-formatter" className="font-normal">{[t('common.outputOptions.xlsx')].flat().join(' ')}</Label>
+                                <Label htmlFor="format-xlsx-formatter" className="font-normal">{t('common.outputOptions.xlsx')}</Label>
                             </div>
-                            <p className="text-xs text-muted-foreground pl-6 pt-1">{[t('common.outputOptions.xlsxDesc')].flat().join(' ')}</p>
+                            <p className="text-xs text-muted-foreground pl-6 pt-1">{t('common.outputOptions.xlsxDesc')}</p>
                         </div>
                         <div>
                             <div className="flex items-center space-x-2">
                                 <RadioGroupItem value="xlsm" id="format-xlsm-formatter" />
-                                <Label htmlFor="format-xlsm-formatter" className="font-normal">{[t('common.outputOptions.xlsm')].flat().join(' ')}</Label>
+                                <Label htmlFor="format-xlsm-formatter" className="font-normal">{t('common.outputOptions.xlsm')}</Label>
                             </div>
-                            <p className="text-xs text-muted-foreground pl-6 pt-1">{[t('common.outputOptions.xlsmDesc')].flat().join(' ')}</p>
+                            <p className="text-xs text-muted-foreground pl-6 pt-1">{t('common.outputOptions.xlsmDesc')}</p>
                         </div>
                     </RadioGroup>
                     <Alert variant="default" className="mt-2">
                         <Lightbulb className="h-4 w-4" />
                         <AlertDescription>
-                            {[t('common.outputOptions.recommendation')].flat().join(' ')}
+                            {t('common.outputOptions.recommendation')}
                         </AlertDescription>
                     </Alert>
                 </div>
                 <Button onClick={handleDownloadFile} variant="outline" className="w-full">
                   <Download className="mr-2 h-5 w-5" />
-                  {[t('formatter.downloadBtn')].flat().join(' ')}
+                  {t('formatter.downloadBtn')}
                 </Button>
             </>
           )}

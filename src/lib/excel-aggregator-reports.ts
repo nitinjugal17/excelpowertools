@@ -1,3 +1,4 @@
+
 import * as XLSX from 'xlsx-js-style';
 import type { AggregationResult, HeaderFormatOptions, SummaryConfig, UpdateResult } from './excel-types';
 import { getUniqueSheetName, sanitizeSheetNameForFormula } from './excel-helpers';
@@ -16,14 +17,14 @@ function _createDataSourceSheet(
 
     const allSheets = results.processedSheetNames;
     const allKeys = new Set(results.reportingKeys);
-    if (results.blankCounts && results.blankCounts.total > 0 && config.blankCountLabel) {
-        allKeys.add(config.blankCountLabel);
+    if (results.blankCounts && results.blankCounts.total > 0 && config.blankLabel) {
+        allKeys.add(config.blankLabel);
     }
 
     for (const sheetName of allSheets) {
         for (const key of allKeys) {
             let count = 0;
-             if (key === config.blankCountLabel) {
+             if (key === config.blankLabel) {
                 count = results.blankCounts?.perSheet[sheetName] || 0;
              } else {
                 count = results.perSheetCounts[sheetName]?.[key] || 0;
@@ -82,8 +83,8 @@ function _generateSummarySheet(
 
     if (reportLayout === 'keysAsRows') {
         const allKeys = new Set(results.reportingKeys);
-        if (results.blankCounts && results.blankCounts.total > 0 && config.blankCountLabel) {
-            allKeys.add(config.blankCountLabel);
+        if (results.blankCounts && results.blankCounts.total > 0 && config.blankLabel) {
+            allKeys.add(config.blankLabel);
         }
         const allSheets = new Set(results.processedSheetNames);
 
@@ -104,7 +105,7 @@ function _generateSummarySheet(
                     rowData.push({ t: 'n', f: formula });
                 } else {
                      let count = 0;
-                     if (key === config.blankCountLabel) {
+                     if (key === config.blankLabel) {
                         count = results.blankCounts?.perSheet[sheetName] || 0;
                      } else {
                         count = results.perSheetCounts[sheetName]?.[key] || 0;
@@ -150,8 +151,8 @@ function _generateSummarySheet(
             .sort((a,b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
 
         const allKeys = new Set(results.reportingKeys);
-        if (results.blankCounts && results.blankCounts.total > 0 && config.blankCountLabel) {
-            allKeys.add(config.blankCountLabel);
+        if (results.blankCounts && results.blankCounts.total > 0 && config.blankLabel) {
+            allKeys.add(config.blankLabel);
         }
         const sortedKeys = Array.from(allKeys)
             .filter(key => !hiddenColsSet.has(key.toLowerCase()))
@@ -171,7 +172,7 @@ function _generateSummarySheet(
                     row.push({ t: 'n', f: formula });
                 } else {
                     let count = 0;
-                     if (key === config.blankCountLabel) {
+                     if (key === config.blankLabel) {
                         count = results.blankCounts?.perSheet[sheetName] || 0;
                      } else {
                         count = results.perSheetCounts[sheetName]?.[key] || 0;
@@ -194,8 +195,8 @@ function _generateSummarySheet(
         
         const summaryWS = XLSX.utils.aoa_to_sheet(sheetData, {cellDates: true});
         
-        if (config.blankRowFormatting && config.blankCountLabel) {
-            const blankKeyIndex = sortedKeys.indexOf(config.blankCountLabel);
+        if (config.blankRowFormatting && config.blankLabel) {
+            const blankKeyIndex = sortedKeys.indexOf(config.blankLabel);
             if (blankKeyIndex !== -1) {
                 const blankColIndex = blankKeyIndex + 1;
                 for (let R = 3; R < sheetData.length; R++) {
@@ -481,3 +482,4 @@ function addBlankDetailsSheet(
     XLSX.utils.book_append_sheet(workbook, ws, sheetName);
     return sheetName;
 }
+

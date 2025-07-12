@@ -96,18 +96,19 @@ function _generateInSheetSummaryAOA(
 ): any[][] {
     const dataToInsert: any[][] = [];
     const { dataSource, showOnlyLocalKeys } = options;
+    const { summaryHeaderFormatting, blankLabel, showBlanksInInSheetSummary, totalRowFormatting, blankRowFormatting } = config;
 
     const dynamicTitle = results.sheetTitles?.[sheetName] || config.inSheetSummaryTitle || 'Summary';
     const headerCell: XLSX.CellObject = { v: dynamicTitle, t: 's' };
-    applyFormatting(headerCell, config.headerFormatting);
+    applyFormatting(headerCell, summaryHeaderFormatting);
     const countHeaderCell: XLSX.CellObject = { v: 'Count', t: 's' };
-    applyFormatting(countHeaderCell, config.headerFormatting);
+    applyFormatting(countHeaderCell, summaryHeaderFormatting);
     dataToInsert.push([headerCell, countHeaderCell]);
     
     const getKeysForSheet = () => {
         const allKeysInReport = new Set(results.reportingKeys);
-        if (results.blankCounts && results.blankCounts.total > 0 && config.blankCountLabel) {
-            allKeysInReport.add(config.blankCountLabel);
+        if (results.blankCounts && results.blankCounts.total > 0 && blankLabel) {
+            allKeysInReport.add(blankLabel);
         }
 
         if (dataSource === 'reportingScope' || !showOnlyLocalKeys) {
@@ -119,8 +120,8 @@ function _generateInSheetSummaryAOA(
         for (const key in sheetCounts) {
             if (sheetCounts[key] > 0) localKeys.add(key);
         }
-        if ((results.blankCounts?.perSheet[sheetName] || 0) > 0 && config.showBlanksInInSheetSummary && config.blankCountLabel) {
-            localKeys.add(config.blankCountLabel);
+        if ((results.blankCounts?.perSheet[sheetName] || 0) > 0 && showBlanksInInSheetSummary && blankLabel) {
+            localKeys.add(blankLabel);
         }
         return Array.from(localKeys);
     };
@@ -131,35 +132,38 @@ function _generateInSheetSummaryAOA(
     keysToDisplay.forEach(key => {
         const sheetCounts = results.perSheetCounts[sheetName] || {};
         const blankCount = results.blankCounts?.perSheet[sheetName] || 0;
-        const staticCount = sheetCounts[key] || (key === config.blankCountLabel ? blankCount : 0);
+        const staticCount = key === blankLabel ? blankCount : (sheetCounts[key] || 0);
         
-        if (key === config.blankCountLabel && !config.showBlanksInInSheetSummary) {
+        if (key === blankLabel && !showBlanksInInSheetSummary) {
             return;
         }
-
-        dataRowsAdded++;
-        const valueCell: XLSX.CellObject = { t: 'n', v: staticCount };
-        applyFormatting(valueCell, { horizontalAlignment: 'right' });
-
-        const keyCell: XLSX.CellObject = { v: key, t: 's' };
         
-        if (key === config.blankCountLabel) {
-            applyFormatting(keyCell, config.blankRowFormatting);
-            applyFormatting(valueCell, config.blankRowFormatting);
-        }
+        // Ensure we add the row even if the count is zero, if it's supposed to be shown.
+        if (staticCount > 0 || (key === blankLabel && showBlanksInInSheetSummary)) {
+            dataRowsAdded++;
+            const valueCell: XLSX.CellObject = { t: 'n', v: staticCount };
+            applyFormatting(valueCell, { horizontalAlignment: 'right' });
 
-        dataToInsert.push([keyCell, valueCell]);
+            const keyCell: XLSX.CellObject = { v: key, t: 's' };
+            
+            if (key === blankLabel) {
+                applyFormatting(keyCell, blankRowFormatting);
+                applyFormatting(valueCell, blankRowFormatting);
+            }
+
+            dataToInsert.push([keyCell, valueCell]);
+        }
     });
 
-    if (dataRowsAdded > 0 && config.totalRowFormatting) {
+    if (dataRowsAdded > 0 && config.enableTotalRowFormatting) {
         const totalCount = Object.values(results.perSheetCounts[sheetName] || {}).reduce((s, c) => s + c, 0);
         const blankCount = results.blankCounts?.perSheet[sheetName] || 0;
-        const totalValue = totalCount + blankCount;
+        const totalValue = totalCount + (showBlanksInInSheetSummary ? blankCount : 0);
 
         const totalValueCell: XLSX.CellObject = { t: 'n', v: totalValue };
         const totalLabelCell: XLSX.CellObject = {v:'Total', t: 's'};
-        applyFormatting(totalLabelCell, config.totalRowFormatting);
-        applyFormatting(totalValueCell, config.totalRowFormatting);
+        applyFormatting(totalLabelCell, totalRowFormatting);
+        applyFormatting(totalValueCell, totalRowFormatting);
         dataToInsert.push([totalLabelCell, totalValueCell]);
     }
     
@@ -193,15 +197,25 @@ export function createGroupReportWorkbook(
 
     const groupMappings = parseGroupMappings(groupMappingString);
     const reportData: { groupName: string; totalCount: number; keys: { name: string, count: number }[] }[] = [];
-    const unmappedKeys = new Set(Object.keys(aggregationResult.totalCounts));
+    
+    const allCountedKeys = new Set(Object.keys(aggregationResult.totalCounts));
+    const blankLabel = summaryConfig.blankLabel || '(Blanks)';
+    if (aggregationResult.blankCounts && aggregationResult.blankCounts.total > 0) {
+        allCountedKeys.add(blankLabel);
+    }
+    const unmappedKeys = new Set(allCountedKeys);
 
     for (const [groupName, keysInGroup] of groupMappings.entries()) {
         let groupTotal = 0;
         const validKeysInGroup: { name: string, count: number }[] = [];
 
         keysInGroup.forEach(key => {
-            if (aggregationResult.totalCounts[key] !== undefined) {
-                const count = aggregationResult.totalCounts[key];
+            const isBlankKey = key === blankLabel;
+            const count = isBlankKey 
+                ? (aggregationResult.blankCounts?.total || 0)
+                : (aggregationResult.totalCounts[key] || 0);
+
+            if (count > 0 || (isBlankKey && aggregationResult.blankCounts && aggregationResult.blankCounts.total > 0)) {
                 groupTotal += count;
                 validKeysInGroup.push({ name: key, count });
             }
@@ -215,8 +229,13 @@ export function createGroupReportWorkbook(
 
     const unmappedData: { key: string, count: number }[] = [];
     unmappedKeys.forEach(key => {
-        if(aggregationResult.totalCounts[key] > 0) {
-            unmappedData.push({ key: key, count: aggregationResult.totalCounts[key] });
+        const isBlankKey = key === blankLabel;
+        const count = isBlankKey 
+            ? (aggregationResult.blankCounts?.total || 0)
+            : (aggregationResult.totalCounts[key] || 0);
+            
+        if(count > 0) {
+            unmappedData.push({ key: key, count: count });
         }
     });
 

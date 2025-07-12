@@ -1,13 +1,19 @@
 
-import type { TextFormatConfig, HorizontalAlignment, VerticalAlignment } from './excel-types';
+import type { TextFormatConfig, HorizontalAlignment, VerticalAlignment, FormattingConfig, CustomHeaderConfig, CustomColumnConfig, RangeFormattingConfig, SheetProtectionConfig, CommandDisablingConfig } from './excel-types';
 import { parseColumnIdentifier, parseSourceColumns } from './excel-helpers';
 
 // Helper functions for VBScript syntax
 function getVbsColor(hex: string): string {
-    if (!hex || hex.length !== 6) return 'vbBlack'; // Default color
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
+    if (!hex || typeof hex !== 'string') return '';
+    const cleanHex = hex.replace('#', '');
+    if (cleanHex.length !== 6) return '';
+    
+    const r = parseInt(cleanHex.substring(0, 2), 16);
+    const g = parseInt(cleanHex.substring(2, 4), 16);
+    const b = parseInt(cleanHex.substring(4, 6), 16);
+    
+    if (isNaN(r) || isNaN(g) || isNaN(b)) return '';
+    
     return `RGB(${r}, ${g}, ${b})`;
 }
 
@@ -23,7 +29,7 @@ function getVbsHorizontalAlignment(alignment: string | undefined): string {
     }
 }
 
-function getVbsVerticalAlignment(alignment: string | undefined): string {
+function getVbsVerticalAlignment(alignment: VerticalAlignment | undefined): string {
     switch(alignment) {
         case 'top': return 'xlTop';
         case 'center': return 'xlCenter';
@@ -68,6 +74,81 @@ Set objExcel = Nothing
 MsgBox "Processing complete.", vbInformation, "Finished"
 `;
 }
+
+export function generateVbsPreview(
+    commandDisablingConfig?: CommandDisablingConfig
+): string {
+
+    if (!commandDisablingConfig) {
+        return "' To make macros 'unremovable', first enable 'Disable Commands' and provide a password. This will generate a VBScript to lock the VBA project.";
+    }
+
+    let script = `Option Explicit
+' This script is designed to lock the VBA Project in your already-processed Excel file.
+' Run this script AFTER opening your downloaded .xlsm file.
+
+Dim objExcel, objWorkbook
+On Error Resume Next
+Set objExcel = GetObject(, "Excel.Application")
+If Err.Number <> 0 Then
+    MsgBox "Could not connect to Excel. Please open your .xlsm file first.", vbCritical, "Error"
+    WScript.Quit
+End If
+On Error GoTo 0
+
+Set objWorkbook = objExcel.ActiveWorkbook
+If objWorkbook Is Nothing Then
+    MsgBox "No active workbook found. Please ensure your .xlsm file is the active window.", vbInformation, "Info"
+    WScript.Quit
+End If
+
+' Attempt to lock the VBA project. This requires manual interaction emulation.
+' This part is notoriously unreliable but is the only way via external script.
+On Error Resume Next
+objExcel.VBE.MainWindow.Visible = True
+If Err.Number <> 0 Then
+    MsgBox "Could not access the Visual Basic Editor. Please ensure 'Trust access to the VBA project object model' is enabled in Excel's Trust Center settings.", vbCritical, "VBE Access Error"
+    WScript.Quit
+End If
+WScript.Sleep 500
+
+objExcel.SendKeys "%t", True ' Tools menu
+WScript.Sleep 200
+objExcel.SendKeys "o", True ' VBAProject Properties
+WScript.Sleep 500
+
+objExcel.SendKeys "^{PGDN}", True ' Go to Protection tab
+WScript.Sleep 200
+
+objExcel.SendKeys "%l", True ' Check 'Lock project for viewing'
+WScript.Sleep 200
+
+objExcel.SendKeys "${commandDisablingConfig.vbaPassword.replace(/"/g, '""')}", True
+WScript.Sleep 100
+objExcel.SendKeys "{TAB}", True
+WScript.Sleep 100
+objExcel.SendKeys "${commandDisablingConfig.vbaPassword.replace(/"/g, '""')}", True
+WScript.Sleep 100
+objExcel.SendKeys "{TAB}", True
+WScript.Sleep 100
+objExcel.SendKeys "~", True ' Enter (OK button)
+WScript.Sleep 200
+objExcel.VBE.MainWindow.Visible = False
+
+If Err.Number <> 0 Then
+  MsgBox "An error occurred trying to lock the project. Please check Excel. Error: " & Err.Description, vbExclamation, "VBScript Error"
+Else
+  MsgBox "Attempted to lock the VBA project. Please save your workbook now to apply the changes.", vbInformation, "Finished"
+End If
+Err.Clear
+On Error GoTo 0
+
+Set objWorkbook = Nothing
+Set objExcel = Nothing
+`;
+    return script;
+}
+
 
 export function generateDuplicateFinderVbs(
     sheetNames: string[],

@@ -60,7 +60,7 @@ export default function ColumnPurgerPage({ onProcessingChange, onFileStateChange
     const selectedFile = event.target.files?.[0];
     if (selectedFile) {
       if (!selectedFile.name.match(/\.(xlsx|xls|xlsm)$/)) {
-        toast({ title: [t('toast.invalidFileType')].flat().join(' '), description: [t('toast.invalidFileTypeDesc')].flat().join(' '), variant: 'destructive' });
+        toast({ title: t('toast.invalidFileType') as string, description: t('toast.invalidFileTypeDesc') as string, variant: 'destructive' });
         setFile(null);
         return;
       }
@@ -79,7 +79,7 @@ export default function ColumnPurgerPage({ onProcessingChange, onFileStateChange
           });
           setSelectedSheets(initialSelection);
         } catch (error) {
-          toast({ title: [t('toast.errorReadingFile')].flat().join(' '), description: [t('toast.errorReadingSheets')].flat().join(' '), variant: 'destructive' });
+          toast({ title: t('toast.errorReadingFile') as string, description: t('toast.errorReadingSheets') as string, variant: 'destructive' });
         } finally {
           setIsLoading(false);
         }
@@ -105,7 +105,7 @@ export default function ColumnPurgerPage({ onProcessingChange, onFileStateChange
   const handleProcessAndDownload = useCallback(async () => {
     const sheetsToProcess = Object.keys(selectedSheets).filter(name => selectedSheets[name]);
     if (!file || sheetsToProcess.length === 0 || !columnsToRemove.trim()) {
-      toast({ title: [t('toast.missingInfo')].flat().join(' '), description: [t('purger.toast.missingInfo')].flat().join(' '), variant: 'destructive' });
+      toast({ title: t('toast.missingInfo') as string, description: t('purger.toast.missingInfo') as string, variant: 'destructive' });
       return;
     }
 
@@ -120,14 +120,14 @@ export default function ColumnPurgerPage({ onProcessingChange, onFileStateChange
       XLSX.writeFile(workbook, `${originalFileName}_purged.${outputFormat}`, { compression: true, cellStyles: true, bookType: outputFormat });
       
       toast({
-        title: [t('toast.processingComplete')].flat().join(' '),
-        description: [t('purger.toast.success')].flat().join(' '),
+        title: t('toast.processingComplete') as string,
+        description: t('purger.toast.success') as string,
         action: <CheckCircle2 className="text-green-500" />,
       });
     } catch (error) {
       console.error("Error purging columns:", error);
       const errorMessage = error instanceof Error ? error.message : String(error);
-      toast({ title: [t('toast.errorReadingFile')].flat().join(' '), description: errorMessage, variant: "destructive" });
+      toast({ title: t('toast.errorReadingFile') as string, description: errorMessage, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -141,22 +141,22 @@ export default function ColumnPurgerPage({ onProcessingChange, onFileStateChange
         <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-10 rounded-lg">
           <div className="flex items-center gap-2 text-muted-foreground">
             <Loader2 className="h-6 w-6 animate-spin" />
-            <span className="text-lg font-medium">{[t('common.processing')].flat().join(' ')}</span>
+            <span className="text-lg font-medium">{t('common.processing')}</span>
           </div>
         </div>
       )}
       <CardHeader>
         <div className="flex items-center space-x-2 mb-2">
           <FileMinus className="h-8 w-8 text-primary" />
-          <CardTitle className="text-2xl font-headline">{[t('purger.title')].flat().join(' ')}</CardTitle>
+          <CardTitle className="text-2xl font-headline">{t('purger.title')}</CardTitle>
         </div>
-        <CardDescription className="font-body">{[t('purger.description')].flat().join(' ')}</CardDescription>
+        <CardDescription className="font-body">{t('purger.description')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-2">
           <Label htmlFor="file-upload-purger" className="flex items-center space-x-2 text-sm font-medium">
             <UploadCloud className="h-5 w-5" />
-            <span>{[t('purger.uploadStep')].flat().join(' ')}</span>
+            <span>{t('purger.uploadStep')}</span>
           </Label>
           <Input
             id="file-upload-purger"
@@ -172,7 +172,7 @@ export default function ColumnPurgerPage({ onProcessingChange, onFileStateChange
           <div className="space-y-3">
             <Label className="flex items-center space-x-2 text-sm font-medium mb-2">
               <ListChecks className="h-5 w-5" />
-              <span>{[t('purger.selectSheetsStep')].flat().join(' ')}</span>
+              <span>{t('purger.selectSheetsStep')}</span>
             </Label>
             <div className="flex items-center space-x-2 mb-2 p-2 border rounded-md bg-secondary/20">
               <Checkbox
@@ -182,7 +182,7 @@ export default function ColumnPurgerPage({ onProcessingChange, onFileStateChange
                 disabled={isLoading}
               />
               <Label htmlFor="select-all-sheets-purger" className="text-sm font-medium flex-grow">
-                {[t('common.selectAll')].flat().join(' ')} ({[t('common.selectedCount', {selected: Object.values(selectedSheets).filter(Boolean).length, total: sheetNames.length})].flat().join(' ')})
+                {t('common.selectAll')} ({t('common.selectedCount', {selected: Object.values(selectedSheets).filter(Boolean).length, total: sheetNames.length})})
               </Label>
             </div>
             <Card className="max-h-48 overflow-y-auto p-3 bg-background">
@@ -206,7 +206,7 @@ export default function ColumnPurgerPage({ onProcessingChange, onFileStateChange
         <div className="space-y-2">
             <Label htmlFor="header-row-purger" className="flex items-center space-x-2 text-sm font-medium">
                 <FileSpreadsheet className="h-5 w-5" />
-                <span>{[t('common.headerRow')].flat().join(' ')}</span>
+                <span>{t('common.headerRow')}</span>
             </Label>
             <Input 
                 id="header-row-purger" 
@@ -216,47 +216,47 @@ export default function ColumnPurgerPage({ onProcessingChange, onFileStateChange
                 onChange={(e) => setHeaderRow(parseInt(e.target.value, 10) || 1)} 
                 disabled={isLoading || !file}
             />
-             <p className="text-xs text-muted-foreground">{[t('purger.headerRowDesc')].flat().join(' ')}</p>
+             <p className="text-xs text-muted-foreground">{t('purger.headerRowDesc')}</p>
         </div>
 
         <div className="space-y-2">
             <Label htmlFor="columns-to-remove" className="flex items-center space-x-2 text-sm font-medium">
                 <FileMinus className="h-5 w-5" />
-                <span>{[t('purger.columnStep')].flat().join(' ')}</span>
+                <span>{t('purger.columnStep')}</span>
             </Label>
             <Input 
                 id="columns-to-remove" 
                 value={columnsToRemove} 
                 onChange={e => setColumnsToRemove(e.target.value)} 
                 disabled={isLoading || !file}
-                placeholder={[t('purger.columnPlaceholder')].flat().join(' ')}
+                placeholder={t('purger.columnPlaceholder') as string}
             />
-            <p className="text-xs text-muted-foreground">{[t('purger.columnDesc')].flat().join(' ')}</p>
+            <p className="text-xs text-muted-foreground">{t('purger.columnDesc')}</p>
         </div>
       </CardContent>
 
       <CardFooter className="flex-col items-stretch space-y-4">
         <div className="w-full p-4 border rounded-md bg-secondary/30 space-y-4">
-            <Label className="text-md font-semibold font-headline">{[t('common.outputOptions.title')].flat().join(' ')}</Label>
+            <Label className="text-md font-semibold font-headline">{t('common.outputOptions.title')}</Label>
             <RadioGroup value={outputFormat} onValueChange={(v) => setOutputFormat(v as any)} className="space-y-3">
                 <div>
                     <div className="flex items-center space-x-2">
                         <RadioGroupItem value="xlsx" id="format-xlsx-purger" />
-                        <Label htmlFor="format-xlsx-purger" className="font-normal">{[t('common.outputOptions.xlsx')].flat().join(' ')}</Label>
+                        <Label htmlFor="format-xlsx-purger" className="font-normal">{t('common.outputOptions.xlsx')}</Label>
                     </div>
-                    <p className="text-xs text-muted-foreground pl-6 pt-1">{[t('common.outputOptions.xlsxDesc')].flat().join(' ')}</p>
+                    <p className="text-xs text-muted-foreground pl-6 pt-1">{t('common.outputOptions.xlsxDesc')}</p>
                 </div>
                 <div>
                     <div className="flex items-center space-x-2">
                         <RadioGroupItem value="xlsm" id="format-xlsm-purger" />
-                        <Label htmlFor="format-xlsm-purger" className="font-normal">{[t('common.outputOptions.xlsm')].flat().join(' ')}</Label>
+                        <Label htmlFor="format-xlsm-purger" className="font-normal">{t('common.outputOptions.xlsm')}</Label>
                     </div>
-                    <p className="text-xs text-muted-foreground pl-6 pt-1">{[t('common.outputOptions.xlsmDesc')].flat().join(' ')}</p>
+                    <p className="text-xs text-muted-foreground pl-6 pt-1">{t('common.outputOptions.xlsmDesc')}</p>
                 </div>
             </RadioGroup>
             <Alert variant="default" className="mt-2">
                 <Lightbulb className="h-4 w-4" />
-                <AlertDescription>{[t('common.outputOptions.recommendation')].flat().join(' ')}</AlertDescription>
+                <AlertDescription>{t('common.outputOptions.recommendation')}</AlertDescription>
             </Alert>
         </div>
         <Button 
@@ -265,7 +265,7 @@ export default function ColumnPurgerPage({ onProcessingChange, onFileStateChange
             className="w-full"
         >
           {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-5 w-5" />}
-          {[t('purger.processBtn')].flat().join(' ')}
+          {t('purger.processBtn')}
         </Button>
       </CardFooter>
     </Card>

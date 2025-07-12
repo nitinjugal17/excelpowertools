@@ -18,6 +18,8 @@
 
 
 
+
+
 export type HorizontalAlignment = 'general' | 'left' | 'center' | 'right' | 'fill' | 'justify' | 'centerContinuous';
 export type VerticalAlignment = 'top' | 'center' | 'bottom' | 'justify' | 'distributed';
 export type Alignment = HorizontalAlignment;
@@ -95,6 +97,12 @@ export interface SheetProtectionConfig {
   password: string;
   type: 'full' | 'range';
   range?: string; // e.g., "A1:D10"
+  selectLockedCells?: boolean;
+}
+
+export interface CommandDisablingConfig {
+  disableCopyPaste: boolean;
+  disablePrint: boolean;
 }
 
 

@@ -42,14 +42,15 @@ const getColorNameFromHex = (hex: string, t: (key: string) => string | string[])
     '000000': 'colors.black',
   };
   const key = translations[hex.toUpperCase()];
-  return key ? [t(key)].flat().join(' ') : [t('finder.customColor')].flat().join(' ');
+  return key ? t(key) as string : t('finder.customColor') as string;
 };
 
 interface EmptyCellFinderPageProps {
   onProcessingChange: (isProcessing: boolean) => void;
+  onFileStateChange: (hasFile: boolean) => void;
 }
 
-export default function EmptyCellFinderPage({ onProcessingChange }: EmptyCellFinderPageProps) {
+export default function EmptyCellFinderPage({ onProcessingChange, onFileStateChange }: EmptyCellFinderPageProps) {
   const { t } = useLanguage();
   const [file, setFile] = useState<File | null>(null);
   const [sheetNames, setSheetNames] = useState<string[]>([]);
@@ -89,6 +90,12 @@ export default function EmptyCellFinderPage({ onProcessingChange }: EmptyCellFin
       onProcessingChange(isLoading);
     }
   }, [isLoading, onProcessingChange]);
+  
+  useEffect(() => {
+    if (onFileStateChange) {
+      onFileStateChange(file !== null);
+    }
+  }, [file, onFileStateChange]);
 
   useEffect(() => {
     // Reset all state when the file changes to ensure a clean slate.
@@ -126,7 +133,7 @@ export default function EmptyCellFinderPage({ onProcessingChange }: EmptyCellFin
           setSelectedSheets(initialSelection);
         } catch (error) {
           console.error("Error reading sheet names:", error);
-          toast({ title: [t('toast.errorReadingFile')].flat().join(' '), description: [t('toast.errorReadingSheets')].flat().join(' '), variant: "destructive" });
+          toast({ title: t('toast.errorReadingFile') as string, description: t('toast.errorReadingSheets') as string, variant: "destructive" });
         } finally {
           setIsLoading(false);
         }
@@ -165,7 +172,7 @@ export default function EmptyCellFinderPage({ onProcessingChange }: EmptyCellFin
     const selectedFile = event.target.files?.[0];
     if (selectedFile) {
       if (!selectedFile.name.match(/\.(xlsx|xls|xlsm)$/)) {
-        toast({ title: [t('toast.invalidFileType')].flat().join(' '), description: [t('toast.invalidFileTypeDesc')].flat().join(' '), variant: 'destructive' });
+        toast({ title: t('toast.invalidFileType') as string, description: t('toast.invalidFileTypeDesc') as string, variant: 'destructive' });
         setFile(null);
         return;
       }
@@ -179,8 +186,8 @@ export default function EmptyCellFinderPage({ onProcessingChange }: EmptyCellFin
       }).catch(error => {
         console.error("Failed to save file to server:", error);
         toast({
-            title: [t('toast.uploadErrorTitle')].flat().join(' '),
-            description: [t('toast.uploadErrorDesc')].flat().join(' '),
+            title: t('toast.uploadErrorTitle') as string,
+            description: t('toast.uploadErrorDesc') as string,
             variant: "destructive"
         });
       });
@@ -192,7 +199,7 @@ export default function EmptyCellFinderPage({ onProcessingChange }: EmptyCellFin
   
   const handleCancel = () => {
     cancellationRequested.current = true;
-    setProcessingStatus([t('common.cancelling')].flat().join(' '));
+    setProcessingStatus(t('common.cancelling') as string);
   };
 
   const handleSelectAllSheets = (checked: boolean) => {
@@ -229,15 +236,15 @@ export default function EmptyCellFinderPage({ onProcessingChange }: EmptyCellFin
     cancellationRequested.current = false;
     const sheetsToProcess = sheetNames.filter(name => selectedSheets[name]);
     if (!file || sheetsToProcess.length === 0 || (checkMode === 'specific' && !columnsToCheck.trim())) {
-      toast({ title: [t('toast.missingInfo')].flat().join(' '), description: [t('finder.toast.missingInfo')].flat().join(' '), variant: 'destructive' });
+      toast({ title: t('toast.missingInfo') as string, description: t('finder.toast.missingInfo') as string, variant: 'destructive' });
       return;
     }
     if (enableHighlight && !isValidHex(highlightColor)) {
-      toast({ title: [t('toast.errorReadingFile')].flat().join(' '), description: [t('finder.toast.invalidColor', { hex: highlightColor })].flat().join(' '), variant: 'destructive' });
+      toast({ title: t('toast.errorReadingFile') as string, description: t('finder.toast.invalidColor', { hex: highlightColor }) as string, variant: 'destructive' });
       return;
     }
     if (generateReportSheet && reportFormat === 'summary' && (!summaryKeyColumn || !summaryContextColumn)) {
-        toast({ title: [t('toast.missingInfo')].flat().join(' '), description: [t('finder.toast.missingSummaryCols')].flat().join(' '), variant: 'destructive'});
+        toast({ title: t('toast.missingInfo') as string, description: t('finder.toast.missingSummaryCols') as string, variant: 'destructive'});
         return;
     }
 
@@ -269,7 +276,7 @@ export default function EmptyCellFinderPage({ onProcessingChange }: EmptyCellFin
             throw new Error('Cancelled by user.');
         }
         setProcessingStatus(
-            [t('finder.toast.processingSheet', { current: status.currentSheet, total: status.totalSheets, sheetName: status.sheetName, count: status.emptyFound })].flat().join(' ')
+            t('finder.toast.processingSheet', { current: status.currentSheet, total: status.totalSheets, sheetName: status.sheetName, count: status.emptyFound }) as string
         );
       };
       
@@ -294,17 +301,17 @@ export default function EmptyCellFinderPage({ onProcessingChange }: EmptyCellFin
       }
       
       toast({
-        title: [t('toast.processingComplete')].flat().join(' '),
-        description: [t('finder.toast.success', { count: report.totalEmpty, sheets: Object.keys(report.summary).length })].flat().join(' '),
+        title: t('toast.processingComplete') as string,
+        description: t('finder.toast.success', { count: report.totalEmpty, sheets: Object.keys(report.summary).length }) as string,
         action: <CheckCircle2 className="text-green-500" />,
       });
 
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : [t('finder.toast.error')].flat().join(' ');
+      const errorMessage = error instanceof Error ? error.message : t('finder.toast.error') as string;
       if (errorMessage !== 'Cancelled by user.') {
-        toast({ title: [t('toast.errorReadingFile')].flat().join(' '), description: errorMessage, variant: 'destructive' });
+        toast({ title: t('toast.errorReadingFile') as string, description: errorMessage, variant: 'destructive' });
       } else {
-        toast({ title: [t('toast.cancelledTitle')].flat().join(' '), description: [t('toast.cancelledDesc')].flat().join(' '), variant: 'default' });
+        toast({ title: t('toast.cancelledTitle') as string, description: t('toast.cancelledDesc') as string, variant: 'default' });
       }
     } finally {
       setIsLoading(false);
@@ -315,15 +322,15 @@ export default function EmptyCellFinderPage({ onProcessingChange }: EmptyCellFin
 
   const handleDownloadUpdatedFile = useCallback(() => {
      if (!modifiedWorkbook || !file) {
-       toast({ title: [t('toast.noFileToDownload')].flat().join(' '), description: [t('finder.toast.noFile')].flat().join(' '), variant: "destructive" });
+       toast({ title: t('toast.noFileToDownload') as string, description: t('finder.toast.noFile') as string, variant: "destructive" });
        return;
      }
      try {
         const originalFileName = file.name.substring(0, file.name.lastIndexOf('.'));
         XLSX.writeFile(modifiedWorkbook, `${originalFileName}_updated.${outputFormat}`, { compression: true, bookType: outputFormat, cellStyles: true });
-        toast({ title: [t('toast.downloadSuccess')].flat().join(' ') });
+        toast({ title: t('toast.downloadSuccess') as string });
      } catch (error) {
-        toast({ title: [t('toast.downloadError')].flat().join(' '), description: [t('toast.downloadError')].flat().join(' '), variant: 'destructive' });
+        toast({ title: t('toast.downloadError') as string, description: t('toast.downloadError') as string, variant: 'destructive' });
      }
   }, [modifiedWorkbook, file, toast, t, outputFormat]);
 
@@ -336,28 +343,28 @@ export default function EmptyCellFinderPage({ onProcessingChange }: EmptyCellFin
         <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center z-10 rounded-lg space-y-4">
             <div className="flex items-center gap-2 text-muted-foreground">
               <Loader2 className="h-6 w-6 animate-spin" />
-              <span className="text-lg font-medium">{processingStatus || [t('common.processing')].flat().join(' ')}</span>
+              <span className="text-lg font-medium">{processingStatus || t('common.processing')}</span>
             </div>
             <Button variant="destructive" onClick={handleCancel}>
                 <XCircle className="mr-2 h-4 w-4"/>
-                {[t('common.cancel')].flat().join(' ')}
+                {t('common.cancel')}
             </Button>
         </div>
       )}
       <CardHeader>
         <div className="flex items-center space-x-2 mb-2">
           <FileScan className="h-8 w-8 text-primary" />
-          <CardTitle className="text-2xl font-headline">{[t('finder.title')].flat().join(' ')}</CardTitle>
+          <CardTitle className="text-2xl font-headline">{t('finder.title')}</CardTitle>
         </div>
         <CardDescription className="font-body">
-          {[t('finder.description')].flat().join(' ')}
+          {t('finder.description')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-2">
           <Label htmlFor="file-upload-finder" className="flex items-center space-x-2 text-sm font-medium">
             <UploadCloud className="h-5 w-5" />
-            <span>{[t('finder.uploadStep')].flat().join(' ')}</span>
+            <span>{t('finder.uploadStep')}</span>
           </Label>
           <Input
             id="file-upload-finder"
@@ -373,7 +380,7 @@ export default function EmptyCellFinderPage({ onProcessingChange }: EmptyCellFin
           <div className="space-y-3">
             <Label className="flex items-center space-x-2 text-sm font-medium mb-2">
               <ListChecks className="h-5 w-5" />
-              <span>{[t('finder.selectSheetsStep')].flat().join(' ')}</span>
+              <span>{t('finder.selectSheetsStep')}</span>
             </Label>
             <div className="flex items-center space-x-2 mb-2 p-2 border rounded-md bg-secondary/20">
               <Checkbox
@@ -383,24 +390,24 @@ export default function EmptyCellFinderPage({ onProcessingChange }: EmptyCellFin
                 disabled={isLoading}
               />
               <Label htmlFor="select-all-sheets-finder" className="text-sm font-medium flex-grow">
-                {[t('common.selectAll')].flat().join(' ')} ({[t('common.selectedCount', {selected: Object.values(selectedSheets).filter(Boolean).length, total: sheetNames.length})].flat().join(' ')})
+                {t('common.selectAll')} ({t('common.selectedCount', {selected: Object.values(selectedSheets).filter(Boolean).length, total: sheetNames.length})})
               </Label>
               {sheetNames.length > 50 && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" disabled={isLoading}>
-                        {[t('common.partial')].flat().join(' ')}
+                        {t('common.partial')}
                         <ChevronDown className="ml-1 h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
-                    <DropdownMenuItem onSelect={() => handlePartialSelection(50)}>{[t('common.first50')].flat().join(' ')}</DropdownMenuItem>
-                    {sheetNames.length >= 100 && <DropdownMenuItem onSelect={() => handlePartialSelection(100)}>{[t('common.first100')].flat().join(' ')}</DropdownMenuItem>}
-                    {sheetNames.length >= 150 && <DropdownMenuItem onSelect={() => handlePartialSelection(150)}>{[t('common.first150')].flat().join(' ')}</DropdownMenuItem>}
+                    <DropdownMenuItem onSelect={() => handlePartialSelection(50)}>{t('common.first50')}</DropdownMenuItem>
+                    {sheetNames.length >= 100 && <DropdownMenuItem onSelect={() => handlePartialSelection(100)}>{t('common.first100')}</DropdownMenuItem>}
+                    {sheetNames.length >= 150 && <DropdownMenuItem onSelect={() => handlePartialSelection(150)}>{t('common.first150')}</DropdownMenuItem>}
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onSelect={() => handleLastPartialSelection(50)}>{[t('common.last50')].flat().join(' ')}</DropdownMenuItem>
-                    {sheetNames.length >= 100 && <DropdownMenuItem onSelect={() => handleLastPartialSelection(100)}>{[t('common.last100')].flat().join(' ')}</DropdownMenuItem>}
-                    {sheetNames.length >= 150 && <DropdownMenuItem onSelect={() => handleLastPartialSelection(150)}>{[t('common.last150')].flat().join(' ')}</DropdownMenuItem>}
+                    <DropdownMenuItem onSelect={() => handleLastPartialSelection(50)}>{t('common.last50')}</DropdownMenuItem>
+                    {sheetNames.length >= 100 && <DropdownMenuItem onSelect={() => handleLastPartialSelection(100)}>{t('common.last100')}</DropdownMenuItem>}
+                    {sheetNames.length >= 150 && <DropdownMenuItem onSelect={() => handleLastPartialSelection(150)}>{t('common.last150')}</DropdownMenuItem>}
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
@@ -426,7 +433,7 @@ export default function EmptyCellFinderPage({ onProcessingChange }: EmptyCellFin
         <div className="space-y-2">
             <Label htmlFor="header-row" className="flex items-center space-x-2 text-sm font-medium">
                 <FileSpreadsheet className="h-5 w-5" />
-                <span>{[t('finder.headerRowStep')].flat().join(' ')}</span>
+                <span>{t('finder.headerRowStep')}</span>
             </Label>
             <Input 
                 id="header-row" 
@@ -436,23 +443,23 @@ export default function EmptyCellFinderPage({ onProcessingChange }: EmptyCellFin
                 onChange={(e) => setHeaderRow(parseInt(e.target.value, 10) || 1)} 
                 disabled={isLoading || !file}
             />
-            <p className="text-xs text-muted-foreground">{[t('finder.headerRowDesc')].flat().join(' ')}</p>
+            <p className="text-xs text-muted-foreground">{t('finder.headerRowDesc')}</p>
         </div>
 
         <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="column-to-check" className="flex items-center space-x-2 text-sm font-medium">
                 <FileScan className="h-5 w-5" />
-                <span>{[t('finder.columnToCheckStep')].flat().join(' ')}</span>
+                <span>{t('finder.columnToCheckStep')}</span>
               </Label>
               <RadioGroup value={checkMode} onValueChange={(v) => setCheckMode(v as any)} className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <Label className="flex items-center space-x-2 p-2 border rounded-md has-[:checked]:border-primary has-[:checked]:bg-primary/10 cursor-pointer">
                     <RadioGroupItem value="all" id="mode-all-cols" />
-                    <span>{[t('finder.checkAllCols')].flat().join(' ')}</span>
+                    <span>{t('finder.checkAllCols')}</span>
                   </Label>
                    <Label className="flex items-center space-x-2 p-2 border rounded-md has-[:checked]:border-primary has-[:checked]:bg-primary/10 cursor-pointer">
                     <RadioGroupItem value="specific" id="mode-specific-cols" />
-                    <span>{[t('finder.checkSpecificCols')].flat().join(' ')}</span>
+                    <span>{t('finder.checkSpecificCols')}</span>
                   </Label>
               </RadioGroup>
               
@@ -463,25 +470,25 @@ export default function EmptyCellFinderPage({ onProcessingChange }: EmptyCellFin
                         value={columnsToCheck}
                         onChange={(e) => setColumnsToCheck(e.target.value)}
                         disabled={isLoading || !file}
-                        placeholder={[t('finder.columnInputPlaceholder')].flat().join(' ')}
+                        placeholder={t('finder.columnInputPlaceholder') as string}
                     />
-                    <p className="text-xs text-muted-foreground pt-1">{[t('finder.columnInputDesc')].flat().join(' ')}</p>
+                    <p className="text-xs text-muted-foreground pt-1">{t('finder.columnInputDesc')}</p>
                 </div>
               )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="columns-to-ignore" className="flex items-center space-x-2 text-sm font-medium">
                   <FilterX className="h-5 w-5" />
-                  <span>{[t('finder.ignoreColsStep')].flat().join(' ')}</span>
+                  <span>{t('finder.ignoreColsStep')}</span>
               </Label>
               <Input
                   id="columns-to-ignore"
                   value={columnsToIgnore}
                   onChange={(e) => setColumnsToIgnore(e.target.value)}
                   disabled={isLoading || !file}
-                  placeholder={[t('finder.ignoreColsPlaceholder')].flat().join(' ')}
+                  placeholder={t('finder.ignoreColsPlaceholder') as string}
               />
-              <p className="text-xs text-muted-foreground">{[t('finder.ignoreColsDesc')].flat().join(' ')}</p>
+              <p className="text-xs text-muted-foreground">{t('finder.ignoreColsDesc')}</p>
             </div>
         </div>
 
@@ -489,7 +496,7 @@ export default function EmptyCellFinderPage({ onProcessingChange }: EmptyCellFin
           <CardHeader className="p-0 pb-4">
             <Label className="flex items-center space-x-2 text-md font-semibold text-primary">
               <Palette className="h-5 w-5" />
-              <span>{[t('finder.optionsStep')].flat().join(' ')}</span>
+              <span>{t('finder.optionsStep')}</span>
             </Label>
           </CardHeader>
           <CardContent className="p-0 space-y-4">
@@ -502,11 +509,11 @@ export default function EmptyCellFinderPage({ onProcessingChange }: EmptyCellFin
                 className="mt-1"
               />
               <div className="grid gap-1.5 leading-none w-full">
-                <Label htmlFor="enable-highlight">{[t('finder.highlightOption')].flat().join(' ')}</Label>
-                <p className="text-xs text-muted-foreground">{[t('finder.highlightOptionDesc')].flat().join(' ')}</p>
+                <Label htmlFor="enable-highlight">{t('finder.highlightOption')}</Label>
+                <p className="text-xs text-muted-foreground">{t('finder.highlightOptionDesc')}</p>
                 {enableHighlight && (
                   <div className="pt-2 space-y-2">
-                    <Label htmlFor="highlight-color" className="text-sm font-medium">{[t('finder.highlightColor')].flat().join(' ')}</Label>
+                    <Label htmlFor="highlight-color" className="text-sm font-medium">{t('finder.highlightColor')}</Label>
                     <div className="flex items-center gap-2">
                         <div className="flex items-center border rounded-md bg-background focus-within:ring-2 focus-within:ring-ring">
                            <span className="pl-3 text-muted-foreground">#</span>
@@ -527,7 +534,7 @@ export default function EmptyCellFinderPage({ onProcessingChange }: EmptyCellFin
                             }}
                         ></div>
                     </div>
-                    {colorName && isValidHex(highlightColor) && <p className="text-xs text-muted-foreground">{[t('finder.colorPreview', { colorName })].flat().join(' ')}</p>}
+                    {colorName && isValidHex(highlightColor) && <p className="text-xs text-muted-foreground">{t('finder.colorPreview', { colorName })}</p>}
                   </div>
                 )}
               </div>
@@ -541,28 +548,28 @@ export default function EmptyCellFinderPage({ onProcessingChange }: EmptyCellFin
                 className="mt-1"
               />
               <div className="grid gap-1.5 leading-none w-full">
-                <Label htmlFor="generate-report">{[t('finder.reportOption')].flat().join(' ')}</Label>
-                <p className="text-xs text-muted-foreground">{[t('finder.reportOptionDesc')].flat().join(' ')}</p>
+                <Label htmlFor="generate-report">{t('finder.reportOption')}</Label>
+                <p className="text-xs text-muted-foreground">{t('finder.reportOptionDesc')}</p>
                 {generateReportSheet && (
                   <Card className="p-4 mt-2 space-y-4 bg-background/50">
-                    <Label>{[t('finder.reportFormat')].flat().join(' ')}</Label>
+                    <Label>{t('finder.reportFormat')}</Label>
                     <RadioGroup value={reportFormat} onValueChange={(v) => setReportFormat(v as any)}>
                       <div className="flex items-start space-x-2">
                         <RadioGroupItem value="compact" id="compact-report" className="mt-1"/>
                         <div className="grid gap-1.5">
-                          <Label htmlFor="compact-report" className="font-normal">{[t('finder.compactReport')].flat().join(' ')}</Label>
-                          <p className="text-xs text-muted-foreground">{[t('finder.compactReportDesc')].flat().join(' ')}</p>
+                          <Label htmlFor="compact-report" className="font-normal">{t('finder.compactReport')}</Label>
+                          <p className="text-xs text-muted-foreground">{t('finder.compactReportDesc')}</p>
                           {reportFormat === 'compact' && (
                             <div className="pt-2 space-y-2">
-                              <Label htmlFor="context-column-compact" className="text-sm font-medium">{[t('finder.compactContextCol')].flat().join(' ')}</Label>
+                              <Label htmlFor="context-column-compact" className="text-sm font-medium">{t('finder.compactContextCol')}</Label>
                               <Input
                                 id="context-column-compact"
                                 value={contextColumnForCompact}
                                 onChange={e => setContextColumnForCompact(e.target.value)}
                                 disabled={isLoading}
-                                placeholder={[t('finder.compactContextColPlaceholder')].flat().join(' ')}
+                                placeholder={t('finder.compactContextColPlaceholder') as string}
                               />
-                              <p className="text-xs text-muted-foreground">{[t('finder.compactContextColDesc')].flat().join(' ')}</p>
+                              <p className="text-xs text-muted-foreground">{t('finder.compactContextColDesc')}</p>
                             </div>
                           )}
                         </div>
@@ -570,52 +577,52 @@ export default function EmptyCellFinderPage({ onProcessingChange }: EmptyCellFin
                       <div className="flex items-start space-x-2">
                         <RadioGroupItem value="detailed" id="detailed-report" className="mt-1"/>
                         <div className="grid gap-1.5">
-                          <Label htmlFor="detailed-report" className="font-normal">{[t('finder.detailedReport')].flat().join(' ')}</Label>
-                          <p className="text-xs text-muted-foreground">{[t('finder.detailedReportDesc')].flat().join(' ')}</p>
+                          <Label htmlFor="detailed-report" className="font-normal">{t('finder.detailedReport')}</Label>
+                          <p className="text-xs text-muted-foreground">{t('finder.detailedReportDesc')}</p>
                         </div>
                       </div>
                       <div className="flex items-start space-x-2">
                         <RadioGroupItem value="summary" id="summary-report" className="mt-1"/>
                         <div className="grid gap-1.5">
-                          <Label htmlFor="summary-report" className="font-normal">{[t('finder.summaryReport')].flat().join(' ')}</Label>
-                          <p className="text-xs text-muted-foreground">{[t('finder.summaryReportDesc')].flat().join(' ')}</p>
+                          <Label htmlFor="summary-report" className="font-normal">{t('finder.summaryReport')}</Label>
+                          <p className="text-xs text-muted-foreground">{t('finder.summaryReportDesc')}</p>
                            {reportFormat === 'summary' && (
                             <div className="pt-2 pl-6 space-y-4">
                               <div className="space-y-2">
-                                <Label htmlFor="summary-key-column" className="flex items-center space-x-2 text-sm font-medium"><BarChartHorizontal className="h-4 w-4" /><span>{[t('finder.summaryKeyCol')].flat().join(' ')}</span></Label>
+                                <Label htmlFor="summary-key-column" className="flex items-center space-x-2 text-sm font-medium"><BarChartHorizontal className="h-4 w-4" /><span>{t('finder.summaryKeyCol')}</span></Label>
                                 <Input
                                   id="summary-key-column"
                                   value={summaryKeyColumn}
                                   onChange={e => setSummaryKeyColumn(e.target.value)}
                                   disabled={isLoading}
-                                  placeholder={[t('finder.summaryKeyColPlaceholder')].flat().join(' ')}
+                                  placeholder={t('finder.summaryKeyColPlaceholder') as string}
                                 />
-                                <p className="text-xs text-muted-foreground">{[t('finder.summaryKeyColDesc')].flat().join(' ')}</p>
+                                <p className="text-xs text-muted-foreground">{t('finder.summaryKeyColDesc')}</p>
                               </div>
                                <div className="space-y-2">
-                                <Label htmlFor="summary-context-column" className="flex items-center space-x-2 text-sm font-medium"><Columns className="h-4 w-4" /><span>{[t('finder.summaryContextCol')].flat().join(' ')}</span></Label>
+                                <Label htmlFor="summary-context-column" className="flex items-center space-x-2 text-sm font-medium"><Columns className="h-4 w-4" /><span>{t('finder.summaryContextCol')}</span></Label>
                                 <Input
                                   id="summary-context-column"
                                   value={summaryContextColumn}
                                   onChange={e => setSummaryContextColumn(e.target.value)}
                                   disabled={isLoading}
-                                  placeholder={[t('finder.summaryContextColPlaceholder')].flat().join(' ')}
+                                  placeholder={t('finder.summaryContextColPlaceholder') as string}
                                 />
-                                <p className="text-xs text-muted-foreground">{[t('finder.summaryContextColDesc')].flat().join(' ')}</p>
+                                <p className="text-xs text-muted-foreground">{t('finder.summaryContextColDesc')}</p>
                               </div>
                               <div className="space-y-2">
                                 <Label htmlFor="blank-key-label" className="flex items-center space-x-2 text-sm font-medium">
                                   <Pilcrow className="h-4 w-4" />
-                                  <span>{[t('finder.blankKeyLabel')].flat().join(' ')}</span>
+                                  <span>{t('finder.blankKeyLabel')}</span>
                                 </Label>
                                 <Input
                                   id="blank-key-label"
                                   value={blankKeyLabel}
                                   onChange={e => setBlankKeyLabel(e.target.value)}
                                   disabled={isLoading}
-                                  placeholder={[t('finder.blankKeyLabelPlaceholder')].flat().join(' ')}
+                                  placeholder={t('finder.blankKeyLabelPlaceholder') as string}
                                 />
-                                <p className="text-xs text-muted-foreground">{[t('finder.blankKeyLabelDesc')].flat().join(' ')}</p>
+                                <p className="text-xs text-muted-foreground">{t('finder.blankKeyLabelDesc')}</p>
                               </div>
                             </div>
                           )}
@@ -627,20 +634,20 @@ export default function EmptyCellFinderPage({ onProcessingChange }: EmptyCellFin
                       <div className="pt-2 pl-6 space-y-4">
                         <Label className="flex items-center space-x-2 text-sm font-medium">
                           <Columns className="h-5 w-5" />
-                          <span>{[t('finder.detailedColsToInclude')].flat().join(' ')}</span>
+                          <span>{t('finder.detailedColsToInclude')}</span>
                         </Label>
                         <div className="flex items-center space-x-2">
                             <Checkbox id="include-all-data" checked={includeAllData} onCheckedChange={c => setIncludeAllData(c as boolean)} />
-                            <Label htmlFor="include-all-data" className="font-normal">{[t('finder.detailedColsToIncludeAll')].flat().join(' ')}</Label>
+                            <Label htmlFor="include-all-data" className="font-normal">{t('finder.detailedColsToIncludeAll')}</Label>
                         </div>
                         <Input 
                           id="columns-to-include"
                           value={columnsToInclude}
                           onChange={e => setColumnsToInclude(e.target.value)}
                           disabled={isLoading || includeAllData}
-                          placeholder={[t('finder.detailedColsToIncludePlaceholder')].flat().join(' ')}
+                          placeholder={t('finder.detailedColsToIncludePlaceholder') as string}
                         />
-                        <p className="text-xs text-muted-foreground">{[t('finder.detailedColsToIncludeDesc')].flat().join(' ')}</p>
+                        <p className="text-xs text-muted-foreground">{t('finder.detailedColsToIncludeDesc')}</p>
                       </div>
                     )}
                   </Card>
@@ -652,11 +659,11 @@ export default function EmptyCellFinderPage({ onProcessingChange }: EmptyCellFin
         
         <Accordion type="single" collapsible>
             <AccordionItem value="advanced-settings">
-                <AccordionTrigger className="text-md font-semibold">{[t('aggregator.advancedSettings.title')].flat().join(' ')}</AccordionTrigger>
+                <AccordionTrigger className="text-md font-semibold">{t('finder.advancedSettings.title')}</AccordionTrigger>
                 <AccordionContent>
                     <Card className="p-4 border-dashed">
                        <div className="space-y-2">
-                            <Label htmlFor="report-chunk-size" className="text-sm font-medium">{[t('aggregator.advancedSettings.maxRows')].flat().join(' ')}</Label>
+                            <Label htmlFor="report-chunk-size" className="text-sm font-medium">{t('finder.advancedSettings.maxRows')}</Label>
                             <Input
                                 id="report-chunk-size"
                                 type="number"
@@ -666,9 +673,7 @@ export default function EmptyCellFinderPage({ onProcessingChange }: EmptyCellFin
                                 onChange={(e) => setReportChunkSize(parseInt(e.target.value, 10) || 100000)}
                                 disabled={isLoading}
                             />
-                            <p className="text-xs text-muted-foreground">
-                                {[t('aggregator.advancedSettings.maxRowsDesc')].flat().join(' ')}
-                            </p>
+                            <p className="text-xs text-muted-foreground">{t('finder.advancedSettings.maxRowsDesc')}</p>
                         </div>
                     </Card>
                 </AccordionContent>
@@ -679,7 +684,7 @@ export default function EmptyCellFinderPage({ onProcessingChange }: EmptyCellFin
           <div className="space-y-2">
             <Label className="flex items-center space-x-2 text-sm font-medium">
               <ScrollText className="h-5 w-5" />
-              <span>{[t('updater.vbsPreviewStep')].flat().join(' ')}</span>
+              <span>{t('updater.vbsPreviewStep')}</span>
             </Label>
             <Card className="bg-secondary/20">
               <CardContent className="p-0">
@@ -689,7 +694,7 @@ export default function EmptyCellFinderPage({ onProcessingChange }: EmptyCellFin
               </CardContent>
             </Card>
              <p className="text-xs text-muted-foreground">
-              {[t('updater.vbsPreviewDesc')].flat().join(' ')}
+              <Markup text={t('updater.vbsPreviewDesc') as string} />
             </p>
           </div>
         )}
@@ -697,15 +702,15 @@ export default function EmptyCellFinderPage({ onProcessingChange }: EmptyCellFin
         <Button onClick={handleProcess} disabled={isLoading || !file} className="w-full">
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           <FileScan className="mr-2 h-5 w-5" />
-          {[t('finder.processBtn')].flat().join(' ')}
+          {t('finder.processBtn')}
         </Button>
       </CardContent>
 
       {hasResults && processedReport.totalEmpty > 0 && (
         <CardFooter className="flex-col space-y-4 items-stretch">
           <div className="p-4 border rounded-md bg-secondary/30">
-            <h3 className="text-lg font-semibold mb-2 font-headline">{[t('finder.resultsTitle')].flat().join(' ')}</h3>
-            <p>{[t('finder.resultsFound', { count: processedReport.totalEmpty })].flat().join(' ')}</p>
+            <h3 className="text-lg font-semibold mb-2 font-headline">{t('finder.resultsTitle')}</h3>
+            <p>{t('finder.resultsFound', { count: processedReport.totalEmpty })}</p>
             <ul className="text-sm mt-2 max-h-32 overflow-y-auto">
               {Object.entries(processedReport.summary).map(([sheetName, count]) => (
                 <li key={sheetName} className="flex justify-between">
@@ -719,33 +724,33 @@ export default function EmptyCellFinderPage({ onProcessingChange }: EmptyCellFin
           {modifiedWorkbook && (
             <>
                 <div className="w-full p-4 border rounded-md bg-secondary/30 space-y-4">
-                    <Label className="text-md font-semibold font-headline">{[t('common.outputOptions.title')].flat().join(' ')}</Label>
+                    <Label className="text-md font-semibold font-headline">{t('common.outputOptions.title')}</Label>
                     <RadioGroup value={outputFormat} onValueChange={(v) => setOutputFormat(v as any)} className="space-y-3">
                         <div>
                             <div className="flex items-center space-x-2">
                                 <RadioGroupItem value="xlsx" id="format-xlsx-finder" />
-                                <Label htmlFor="format-xlsx-finder" className="font-normal">{[t('common.outputOptions.xlsx')].flat().join(' ')}</Label>
+                                <Label htmlFor="format-xlsx-finder" className="font-normal">{t('common.outputOptions.xlsx')}</Label>
                             </div>
-                            <p className="text-xs text-muted-foreground pl-6 pt-1">{[t('common.outputOptions.xlsxDesc')].flat().join(' ')}</p>
+                            <p className="text-xs text-muted-foreground pl-6 pt-1">{t('common.outputOptions.xlsxDesc')}</p>
                         </div>
                         <div>
                             <div className="flex items-center space-x-2">
                                 <RadioGroupItem value="xlsm" id="format-xlsm-finder" />
-                                <Label htmlFor="format-xlsm-finder" className="font-normal">{[t('common.outputOptions.xlsm')].flat().join(' ')}</Label>
+                                <Label htmlFor="format-xlsm-finder" className="font-normal">{t('common.outputOptions.xlsm')}</Label>
                             </div>
-                            <p className="text-xs text-muted-foreground pl-6 pt-1">{[t('common.outputOptions.xlsmDesc')].flat().join(' ')}</p>
+                            <p className="text-xs text-muted-foreground pl-6 pt-1">{t('common.outputOptions.xlsmDesc')}</p>
                         </div>
                     </RadioGroup>
                     <Alert variant="default" className="mt-2">
                         <Lightbulb className="h-4 w-4" />
                         <AlertDescription>
-                            {[t('common.outputOptions.recommendation')].flat().join(' ')}
+                            {t('common.outputOptions.recommendation')}
                         </AlertDescription>
                     </Alert>
                 </div>
                 <Button onClick={handleDownloadUpdatedFile} variant="outline" className="w-full">
                   <Download className="mr-2 h-5 w-5" />
-                  {[t('finder.downloadBtn')].flat().join(' ')}
+                  {t('finder.downloadBtn')}
                 </Button>
             </>
           )}

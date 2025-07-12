@@ -1,6 +1,6 @@
 
 import * as XLSX from 'xlsx-js-style';
-import type { CustomColumnConfig, CustomHeaderConfig, FormattingConfig, RangeFormattingConfig, HorizontalAlignment, VerticalAlignment, SheetProtectionConfig } from './excel-types';
+import type { CustomColumnConfig, CustomHeaderConfig, FormattingConfig, RangeFormattingConfig, HorizontalAlignment, VerticalAlignment, SheetProtectionConfig, CommandDisablingConfig } from './excel-types';
 import { parseColumnIdentifier } from './excel-helpers';
 
 interface Font {
@@ -12,17 +12,82 @@ interface Font {
   color?: { rgb: string };
 }
 
+/**
+ * Generates the VBA code string needed to disable workbook commands.
+ * This code is intended to be placed in the `ThisWorkbook` module.
+ * @param config Configuration for which commands to disable.
+ * @returns A string containing the VBA code.
+ */
+function generateCommandDisablingVba(config: CommandDisablingConfig): string {
+  let vba = `Private Sub Workbook_Open()
+    MsgBox "This workbook has enhanced security features enabled.", vbInformation, "Security Notice"
+`;
+  if (config.disableCopyPaste) {
+    vba += `
+    ' Disable Cut, Copy, Paste
+    Application.OnKey "^c", "MsgBoxDisabled"
+    Application.OnKey "^x", "MsgBoxDisabled"
+    Application.OnKey "^v", "MsgBoxDisabled"
+`;
+  }
+  if (config.disablePrint) {
+    vba += `
+    ' Disable Print
+    Application.OnKey "^p", "MsgBoxDisabled"
+`;
+  }
+  vba += `End Sub
+
+Private Sub Workbook_BeforeClose(Cancel As Boolean)
+`;
+  if (config.disableCopyPaste) {
+    vba += `
+    ' Re-enable Cut, Copy, Paste on close
+    Application.OnKey "^c"
+    Application.OnKey "^x"
+    Application.OnKey "^v"
+`;
+  }
+  if (config.disablePrint) {
+    vba += `
+    ' Re-enable Print on close
+    Application.OnKey "^p"
+`;
+  }
+  vba += `End Sub
+`;
+
+  if (config.disablePrint) {
+    vba += `
+Private Sub Workbook_BeforePrint(Cancel As Boolean)
+    MsgBox "Printing is disabled for this workbook.", vbCritical, "Action Disabled"
+    Cancel = True
+End Sub
+`;
+  }
+
+  if (config.disableCopyPaste || config.disablePrint) {
+    vba += `
+Sub MsgBoxDisabled()
+    MsgBox "This command has been disabled for security reasons.", vbCritical, "Action Disabled"
+End Sub
+`;
+  }
+  return vba;
+}
+
 
 /**
  * Formats headers, applies AutoFilter, and optionally inserts a custom header or column into specified sheets.
  * This function now correctly handles sequential operations by recalculating sheet dimensions after each step.
  * @param workbook The workbook to modify.
  * @param sheetNamesToUpdate Array of sheet names to apply changes to.
- * @param formattingConfig Configuration for styling the data column titles row.
+ * @param formattingConfig Optional configuration for styling the data column titles row.
  * @param customHeaderConfig Optional configuration for inserting a new custom header.
  * @param customColumnConfig Optional configuration for inserting a new custom column.
  * @param rangeFormattingConfig Optional configuration for formatting a specific range.
  * @param sheetProtectionConfig Optional configuration for protecting sheets.
+ * @param commandDisablingConfig Optional configuration for disabling workbook commands via VBA.
  * @param onProgress Optional callback for progress reporting.
  * @param cancellationRequestedRef Optional ref to check for cancellation requests.
  * @returns The modified XLSX.WorkBook object.
@@ -30,15 +95,54 @@ interface Font {
 export function formatAndUpdateSheets(
   workbook: XLSX.WorkBook,
   sheetNamesToUpdate: string[],
-  formattingConfig: FormattingConfig,
+  formattingConfig?: FormattingConfig,
   customHeaderConfig?: CustomHeaderConfig,
   customColumnConfig?: CustomColumnConfig,
   rangeFormattingConfig?: RangeFormattingConfig,
   sheetProtectionConfig?: SheetProtectionConfig,
+  commandDisablingConfig?: CommandDisablingConfig,
   onProgress?: (status: { sheetName: string; currentSheet: number; totalSheets: number; operation: string }) => void,
   cancellationRequestedRef?: React.RefObject<boolean>
 ): XLSX.WorkBook {
   
+  if (commandDisablingConfig) {
+    const vbaCode = generateCommandDisablingVba(commandDisablingConfig);
+    // Initialize VBA project structure if it doesn't exist
+    if (!workbook.vba) {
+      workbook.vba = {
+          SheetNames: [],
+          Worksheets: {},
+          ThisWorkbook: { CodeName: "ThisWorkbook" },
+          References: [], // This is the critical fix for atpvbaen.xls
+      };
+    }
+    // Explicitly define an empty references array to prevent unwanted add-in links
+    if (!workbook.vba.References) {
+        workbook.vba.References = [];
+    }
+
+    // Add code to the ThisWorkbook module
+    if (!workbook.vba.ThisWorkbook) {
+        workbook.vba.ThisWorkbook = { CodeName: 'ThisWorkbook' };
+    }
+    workbook.vba.ThisWorkbook.Code = vbaCode;
+    
+    // Add a standard module for the helper function
+    if (!workbook.vba.Worksheets) {
+      workbook.vba.Worksheets = {};
+    }
+    
+    const moduleName = 'SecurityModule';
+    // Check if module already exists to avoid duplication if function is called multiple times
+    if (!workbook.vba.Worksheets[moduleName]) {
+        workbook.vba.Worksheets[moduleName] = {
+            CodeName: moduleName,
+            Code: `Sub MsgBoxDisabled()\n    MsgBox "This command has been disabled for security reasons.", vbCritical, "Action Disabled"\nEnd Sub`
+        };
+    }
+  }
+  
+
   for (let i = 0; i < sheetNamesToUpdate.length; i++) {
     const sheetName = sheetNamesToUpdate[i];
     if (cancellationRequestedRef?.current) throw new Error('Cancelled by user.');
@@ -49,7 +153,7 @@ export function formatAndUpdateSheets(
     onProgress?.({ sheetName, currentSheet: i + 1, totalSheets: sheetNamesToUpdate.length, operation: "Starting..." });
 
     // Effective row indices will be adjusted as rows/columns are inserted.
-    let effectiveDataTitlesRow = formattingConfig.dataTitlesRowNumber;
+    let effectiveDataTitlesRow = formattingConfig?.dataTitlesRowNumber;
     let effectiveNewColHeaderRow = customColumnConfig?.newColumnHeaderRow;
     let effectiveDataStartRow = customColumnConfig?.dataStartRow;
 
@@ -113,7 +217,7 @@ export function formatAndUpdateSheets(
         }
         
         // Adjust effective row indices for subsequent steps
-        if (insertAtIndex < effectiveDataTitlesRow) effectiveDataTitlesRow++;
+        if (effectiveDataTitlesRow && insertAtIndex < effectiveDataTitlesRow) effectiveDataTitlesRow++;
         if (effectiveNewColHeaderRow && insertAtIndex < effectiveNewColHeaderRow) effectiveNewColHeaderRow++;
         if (effectiveDataStartRow && insertAtIndex < effectiveDataStartRow) effectiveDataStartRow++;
     }
@@ -237,42 +341,44 @@ export function formatAndUpdateSheets(
     }
     
     // --- Step 4: Format Data Headers & AutoFilter ---
-    onProgress?.({ sheetName, currentSheet: i + 1, totalSheets: sheetNamesToUpdate.length, operation: "Formatting headers & table" });
-    const finalRange = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
-    const finalDataTitlesRowIndex = effectiveDataTitlesRow - 1;
+    if (formattingConfig && effectiveDataTitlesRow) {
+        onProgress?.({ sheetName, currentSheet: i + 1, totalSheets: sheetNamesToUpdate.length, operation: "Formatting headers & table" });
+        const finalRange = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+        const finalDataTitlesRowIndex = effectiveDataTitlesRow - 1;
 
-    if (finalDataTitlesRowIndex >= 0 && finalDataTitlesRowIndex <= finalRange.e.r) {
-      for (let C = finalRange.s.c; C <= finalRange.e.c; ++C) {
-        const cellAddress = XLSX.utils.encode_cell({ r: finalDataTitlesRowIndex, c: C });
-        let cell = worksheet[cellAddress];
-        if (!cell) {
-          worksheet[cellAddress] = { t: 'z' };
-          cell = worksheet[cellAddress];
+        if (finalDataTitlesRowIndex >= 0 && finalDataTitlesRowIndex <= finalRange.e.r) {
+          for (let C = finalRange.s.c; C <= finalRange.e.c; ++C) {
+            const cellAddress = XLSX.utils.encode_cell({ r: finalDataTitlesRowIndex, c: C });
+            let cell = worksheet[cellAddress];
+            if (!cell) {
+              worksheet[cellAddress] = { t: 'z' };
+              cell = worksheet[cellAddress];
+            }
+            if (!cell.s) cell.s = {};
+            
+            if (!cell.s.font) cell.s.font = {};
+            const newFont: Font = { ...cell.s.font };
+            const { styleOptions } = formattingConfig;
+            if(styleOptions.bold !== undefined) newFont.bold = styleOptions.bold;
+            if(styleOptions.italic !== undefined) newFont.italic = styleOptions.italic;
+            if(styleOptions.underline !== undefined) newFont.underline = styleOptions.underline;
+            if(styleOptions.fontName) newFont.name = styleOptions.fontName;
+            if(styleOptions.fontSize) newFont.sz = styleOptions.fontSize;
+            cell.s.font = newFont;
+            
+            if (styleOptions.alignment && styleOptions.alignment !== 'general') {
+              if (!cell.s.alignment) cell.s.alignment = {};
+              cell.s.alignment = { ...cell.s.alignment, horizontal: styleOptions.alignment };
+            }
+          }
+          
+          if (finalDataTitlesRowIndex < finalRange.e.r) {
+            worksheet['!autofilter'] = { ref: XLSX.utils.encode_range({
+              s: { r: finalDataTitlesRowIndex, c: finalRange.s.c },
+              e: { r: finalRange.e.r, c: finalRange.e.c } 
+            }) };
+          }
         }
-        if (!cell.s) cell.s = {};
-        
-        if (!cell.s.font) cell.s.font = {};
-        const newFont: Font = { ...cell.s.font };
-        const { styleOptions } = formattingConfig;
-        if(styleOptions.bold !== undefined) newFont.bold = styleOptions.bold;
-        if(styleOptions.italic !== undefined) newFont.italic = styleOptions.italic;
-        if(styleOptions.underline !== undefined) newFont.underline = styleOptions.underline;
-        if(styleOptions.fontName) newFont.name = styleOptions.fontName;
-        if(styleOptions.fontSize) newFont.sz = styleOptions.fontSize;
-        cell.s.font = newFont;
-        
-        if (styleOptions.alignment && styleOptions.alignment !== 'general') {
-          if (!cell.s.alignment) cell.s.alignment = {};
-          cell.s.alignment = { ...cell.s.alignment, horizontal: styleOptions.alignment };
-        }
-      }
-      
-      if (finalDataTitlesRowIndex < finalRange.e.r) {
-        worksheet['!autofilter'] = { ref: XLSX.utils.encode_range({
-          s: { r: finalDataTitlesRowIndex, c: finalRange.s.c },
-          e: { r: finalRange.e.r, c: finalRange.e.c } 
-        }) };
-      }
     }
     
     // --- Step 5: Auto-adjust column widths ---
@@ -293,49 +399,68 @@ export function formatAndUpdateSheets(
 
     // --- Step 6: Apply Sheet Protection ---
     if (sheetProtectionConfig && sheetProtectionConfig.password) {
-        onProgress?.({ sheetName, currentSheet: i + 1, totalSheets: sheetNamesToUpdate.length, operation: "Applying sheet protection" });
-        
-        // This sets the sheet-level protection options.
-        worksheet['!protect'] = {
-            password: sheetProtectionConfig.password,
-            selectLockedCells: true,
-            selectUnlockedCells: true,
-        };
+      onProgress?.({ sheetName, currentSheet: i + 1, totalSheets: sheetNamesToUpdate.length, operation: "Applying sheet protection" });
 
-        if (sheetProtectionConfig.type === 'range' && sheetProtectionConfig.range) {
-            // First, unlock all cells in the sheet.
-            const fullRange = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
-            for (let R = fullRange.s.r; R <= fullRange.e.r; ++R) {
-                for (let C = fullRange.s.c; C <= fullRange.e.c; ++C) {
-                    const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
-                    const cell = worksheet[cellAddress] || { t: 'z' };
-                    if (!cell.s) cell.s = {};
-                    if (!cell.s.protection) cell.s.protection = {};
-                    cell.s.protection.locked = false;
-                    worksheet[cellAddress] = cell;
-                }
-            }
+      const hash = getPasswordHash(sheetProtectionConfig.password);
+      
+      worksheet['!protect'] = {
+          password: hash,
+          selectLockedCells: sheetProtectionConfig.selectLockedCells === undefined ? true : sheetProtectionConfig.selectLockedCells,
+          selectUnlockedCells: true,
+      };
 
-            // Then, lock only the cells in the specified range.
-            try {
-                const protectionRange = XLSX.utils.decode_range(sheetProtectionConfig.range);
-                for (let R = protectionRange.s.r; R <= protectionRange.e.r; ++R) {
-                    for (let C = protectionRange.s.c; C <= protectionRange.e.c; ++C) {
-                       const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
-                       const cell = worksheet[cellAddress] || { t: 'z' };
-                       if (!cell.s) cell.s = {};
-                       if (!cell.s.protection) cell.s.protection = {};
-                       cell.s.protection.locked = true;
-                       worksheet[cellAddress] = cell;
-                    }
-                }
-            } catch (e) {
-                console.error(`Invalid protection range "${sheetProtectionConfig.range}" provided. Falling back to full sheet protection.`);
-            }
-        }
-        // If type is 'full', we don't need to do anything with cell-level locking, as all cells are locked by default when the sheet is protected.
+      const fullRange = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+      if (sheetProtectionConfig.type === 'range' && sheetProtectionConfig.range) {
+          // Unlock all cells first
+          for (let R = fullRange.s.r; R <= fullRange.e.r; ++R) {
+              for (let C = fullRange.s.c; C <= fullRange.e.c; ++C) {
+                  const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+                  const cell = worksheet[cellAddress] || { t: 'z' };
+                  if (!cell.s) cell.s = {};
+                  cell.s.protection = { ...cell.s.protection, locked: false };
+                  worksheet[cellAddress] = cell;
+              }
+          }
+
+          // Lock the specified range
+          try {
+              const protectionRange = XLSX.utils.decode_range(sheetProtectionConfig.range);
+              for (let R = protectionRange.s.r; R <= protectionRange.e.r; ++R) {
+                  for (let C = protectionRange.s.c; C <= protectionRange.e.c; ++C) {
+                     const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+                     const cell = worksheet[cellAddress] || { t: 'z' };
+                     if (!cell.s) cell.s = {};
+                     cell.s.protection = { ...cell.s.protection, locked: true };
+                     worksheet[cellAddress] = cell;
+                  }
+              }
+          } catch (e) {
+              console.error(`Invalid protection range "${sheetProtectionConfig.range}" provided. Defaulting to full sheet protection.`);
+               worksheet['!protect'].type = 'full';
+          }
+      } else if(sheetProtectionConfig.type === 'full') {
+           // For full protection, ensure all cells are marked as locked (which is the default state).
+           // We don't need to loop and set every cell as it's the default.
+      }
     }
   }
 
   return workbook;
+}
+
+/**
+ * Creates a password hash compatible with XLSX protection.
+ * @param password The string password to hash.
+ * @returns The numeric hash.
+ */
+function getPasswordHash(password: string): number {
+    if (!password) return 0;
+    let hash = 0;
+    let i = password.length;
+    while(i > 0) {
+        hash = (hash << 5) - hash + password.charCodeAt(i - 1);
+        hash |= 0;
+        i--;
+    }
+    return hash;
 }

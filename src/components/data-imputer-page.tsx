@@ -348,7 +348,7 @@ export default function DataImputerPage({ onProcessingChange, onFileStateChange 
             </div>
             <Button variant="destructive" onClick={handleCancel}>
                 <XCircle className="mr-2 h-4 w-4"/>
-                {t('common.cancel')}
+                {[t('common.cancel')].flat().join(' ')}
             </Button>
         </div>
       )}
@@ -461,7 +461,7 @@ export default function DataImputerPage({ onProcessingChange, onFileStateChange 
                       <span>{t('imputer.columnToFill')}</span>
                   </Label>
                    <Select value={targetColumn} onValueChange={setTargetColumn} disabled={isProcessing || availableHeaders.length === 0}>
-                    <SelectTrigger id="target-column"><SelectValue placeholder="Select a column"/></SelectTrigger>
+                    <SelectTrigger id="target-column"><SelectValue placeholder={t('imputer.selectColumnPlaceholder') as string}/></SelectTrigger>
                     <SelectContent>{availableHeaders.map(h => <SelectItem key={`target-${h}`} value={h}>{h}</SelectItem>)}</SelectContent>
                   </Select>
                    <p className="text-xs text-muted-foreground">{t('imputer.columnToFillDesc')}</p>
@@ -521,7 +521,7 @@ export default function DataImputerPage({ onProcessingChange, onFileStateChange 
                                   <span>{t('imputer.keyColumn')}</span>
                               </Label>
                                <Select value={manualKeyColumn} onValueChange={setManualKeyColumn} disabled={isProcessing || availableHeaders.length === 0}>
-                                <SelectTrigger id="manual-key-column"><SelectValue placeholder="Select a column"/></SelectTrigger>
+                                <SelectTrigger id="manual-key-column"><SelectValue placeholder={t('imputer.selectColumnPlaceholder') as string}/></SelectTrigger>
                                 <SelectContent>{availableHeaders.map(h => <SelectItem key={`key-${h}`} value={h}>{h}</SelectItem>)}</SelectContent>
                               </Select>
                                <p className="text-xs text-muted-foreground">{t('imputer.keyColumnDesc')}</p>
@@ -618,7 +618,7 @@ export default function DataImputerPage({ onProcessingChange, onFileStateChange 
       )}
        {!hasResults && !isProcessing && (
         <CardFooter>
-            <p className="text-sm text-muted-foreground w-full text-center">{t('imputer.noSuggestions')}</p>
+            <p className="text-sm text-muted-foreground w-full text-center">{t('imputer.noSuggestionsYet')}</p>
         </CardFooter>
       )}
     </Card>

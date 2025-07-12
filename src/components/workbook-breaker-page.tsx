@@ -264,15 +264,15 @@ export default function WorkbookBreakerPage({ onProcessingChange, onFileStateCha
       <CardHeader>
         <div className="flex items-center space-x-2 mb-2">
           <LibraryBig className="h-8 w-8 text-primary" />
-          <CardTitle className="text-2xl font-headline">{t('breaker.title')}</CardTitle>
+          <CardTitle className="text-2xl font-headline">{[t('breaker.title')].flat().join(' ')}</CardTitle>
         </div>
-        <CardDescription className="font-body">{t('breaker.description')}</CardDescription>
+        <CardDescription className="font-body">{[t('breaker.description')].flat().join(' ')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-2">
           <Label htmlFor="file-upload-breaker" className="flex items-center space-x-2 text-sm font-medium">
             <UploadCloud className="h-5 w-5" />
-            <span>{t('breaker.uploadStep')}</span>
+            <span>{[t('breaker.uploadStep')].flat().join(' ')}</span>
           </Label>
           <Input
             id="file-upload-breaker"
@@ -289,14 +289,14 @@ export default function WorkbookBreakerPage({ onProcessingChange, onFileStateCha
              <Card className="p-4 bg-secondary/30">
                 <Label className="flex items-center space-x-2 text-md font-semibold mb-2">
                     <Scissors className="h-5 w-5" />
-                    <span>{t('breaker.smartBreakup.title')}</span>
+                    <span>{[t('breaker.smartBreakup.title')].flat().join(' ')}</span>
                 </Label>
                 <div className="space-y-4">
                     <div>
-                        <p className="text-xs text-muted-foreground mb-4">{t('breaker.smartBreakup.description')}</p>
+                        <p className="text-xs text-muted-foreground mb-4">{[t('breaker.smartBreakup.description')].flat().join(' ')}</p>
                         <div className="flex items-center gap-4">
                             <div className="flex-grow space-y-2">
-                                <Label htmlFor="desired-files" className="text-sm font-medium">{t('breaker.smartBreakup.label')}</Label>
+                                <Label htmlFor="desired-files" className="text-sm font-medium">{[t('breaker.smartBreakup.label')].flat().join(' ')}</Label>
                                 <Input
                                     id="desired-files"
                                     type="number"
@@ -309,15 +309,15 @@ export default function WorkbookBreakerPage({ onProcessingChange, onFileStateCha
                             </div>
                             <div className="pt-8">
                                 <Button onClick={handleSuggestBreakup} disabled={isProcessing || !file || !desiredFiles}>
-                                    {t('breaker.smartBreakup.button')}
+                                    {[t('breaker.smartBreakup.button')].flat().join(' ')}
                                 </Button>
                             </div>
                         </div>
                     </div>
                     <div className="border-t pt-4">
-                        <p className="text-xs text-muted-foreground mb-2">{t('breaker.smartBreakup.individualDesc')}</p>
+                        <p className="text-xs text-muted-foreground mb-2">{[t('breaker.smartBreakup.individualDesc')].flat().join(' ')}</p>
                         <Button onClick={handleBreakIntoIndividualFiles} disabled={isProcessing || !file} className="w-full" variant="outline">
-                             {t('breaker.smartBreakup.individualBtn')}
+                             {[t('breaker.smartBreakup.individualBtn')].flat().join(' ')}
                         </Button>
                     </div>
                 </div>
@@ -326,21 +326,21 @@ export default function WorkbookBreakerPage({ onProcessingChange, onFileStateCha
             <Card className="p-4 bg-secondary/30">
                 <Label className="flex items-center space-x-2 text-md font-semibold mb-2">
                     <Group className="h-5 w-5" />
-                    <span>{t('breaker.groupingStep')}</span>
+                    <span>{[t('breaker.groupingStep')].flat().join(' ')}</span>
                 </Label>
                 <div className="space-y-2">
-                  <Label htmlFor="filter-sheets" className="text-sm font-medium">{t('breaker.filterSheets')}</Label>
+                  <Label htmlFor="filter-sheets" className="text-sm font-medium">{[t('breaker.filterSheets')].flat().join(' ')}</Label>
                   <Input 
                     id="filter-sheets"
                     value={filterText}
                     onChange={(e) => setFilterText(e.target.value)}
                     placeholder={[t('breaker.filterPlaceholder')].flat().join(' ')}
                   />
-                  <p className="text-xs text-muted-foreground">{t('breaker.filterDesc')}</p>
+                  <p className="text-xs text-muted-foreground">{[t('breaker.filterDesc')].flat().join(' ')}</p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                     <div className="space-y-2">
-                        <Label htmlFor="bulk-group-name" className="text-sm font-medium">{t('breaker.bulkAssignName')}</Label>
+                        <Label htmlFor="bulk-group-name" className="text-sm font-medium">{[t('breaker.bulkAssignName')].flat().join(' ')}</Label>
                         <Input
                             id="bulk-group-name"
                             value={bulkGroupName}
@@ -351,7 +351,7 @@ export default function WorkbookBreakerPage({ onProcessingChange, onFileStateCha
                     </div>
                     <div className="flex items-end">
                        <Button onClick={handleBulkAssign} disabled={!filterText || !bulkGroupName} className="w-full">
-                         {t('breaker.bulkAssignBtn')} ({filteredSheets.length})
+                         {[t('breaker.bulkAssignBtn')].flat().join(' ')} ({filteredSheets.length})
                        </Button>
                     </div>
                 </div>
@@ -359,10 +359,10 @@ export default function WorkbookBreakerPage({ onProcessingChange, onFileStateCha
 
             <div className="border rounded-lg overflow-hidden">
                 <div className="p-4 bg-muted/50 grid grid-cols-2 gap-4 items-center">
-                    <h4 className="text-sm font-semibold">{t('breaker.sheetName')}</h4>
+                    <h4 className="text-sm font-semibold">{[t('breaker.sheetName')].flat().join(' ')}</h4>
                     <div className="flex justify-between items-center">
-                        <h4 className="text-sm font-semibold">{t('breaker.newWorkbookName')}</h4>
-                        <Button variant="outline" size="sm" onClick={handleClearGroups}><FilterX className="mr-2 h-4 w-4" />{t('breaker.clearGroups')}</Button>
+                        <h4 className="text-sm font-semibold">{[t('breaker.newWorkbookName')].flat().join(' ')}</h4>
+                        <Button variant="outline" size="sm" onClick={handleClearGroups}><FilterX className="mr-2 h-4 w-4" />{[t('breaker.clearGroups')].flat().join(' ')}</Button>
                     </div>
                 </div>
                 <ScrollArea className="h-72">
@@ -389,7 +389,7 @@ export default function WorkbookBreakerPage({ onProcessingChange, onFileStateCha
             
             <Button onClick={handleProcess} disabled={isProcessing || Object.keys(sheetGroups).filter(key => sheetGroups[key]).length === 0} className="w-full">
               <LibraryBig className="mr-2 h-5 w-5" />
-              {t('breaker.processBtn')}
+              {[t('breaker.processBtn')].flat().join(' ')}
             </Button>
           </div>
         )}
@@ -399,32 +399,32 @@ export default function WorkbookBreakerPage({ onProcessingChange, onFileStateCha
         <CardFooter className="flex-col space-y-4 items-stretch">
             <Card className="p-4 bg-secondary/30">
                 <CardHeader className="p-0 pb-4">
-                    <CardTitle className="text-lg font-headline">{t('breaker.resultsTitle')}</CardTitle>
-                    <CardDescription>{t('breaker.resultsDesc')}</CardDescription>
+                    <CardTitle className="text-lg font-headline">{[t('breaker.resultsTitle')].flat().join(' ')}</CardTitle>
+                    <CardDescription>{[t('breaker.resultsDesc')].flat().join(' ')}</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0 max-h-60 overflow-y-auto">
                     <div className="w-full p-4 border rounded-md bg-background space-y-4 mb-4">
-                        <Label className="text-md font-semibold font-headline">{t('common.outputOptions.title')}</Label>
+                        <Label className="text-md font-semibold font-headline">{[t('common.outputOptions.title')].flat().join(' ')}</Label>
                         <RadioGroup value={outputFormat} onValueChange={(v) => setOutputFormat(v as any)} className="space-y-3">
                             <div>
                                 <div className="flex items-center space-x-2">
                                     <RadioGroupItem value="xlsx" id="format-xlsx-breaker" />
-                                    <Label htmlFor="format-xlsx-breaker" className="font-normal">{t('common.outputOptions.xlsx')}</Label>
+                                    <Label htmlFor="format-xlsx-breaker" className="font-normal">{[t('common.outputOptions.xlsx')].flat().join(' ')}</Label>
                                 </div>
-                                <p className="text-xs text-muted-foreground pl-6 pt-1">{t('common.outputOptions.xlsxDesc')}</p>
+                                <p className="text-xs text-muted-foreground pl-6 pt-1">{[t('common.outputOptions.xlsxDesc')].flat().join(' ')}</p>
                             </div>
                             <div>
                                 <div className="flex items-center space-x-2">
                                     <RadioGroupItem value="xlsm" id="format-xlsm-breaker" />
-                                    <Label htmlFor="format-xlsm-breaker" className="font-normal">{t('common.outputOptions.xlsm')}</Label>
+                                    <Label htmlFor="format-xlsm-breaker" className="font-normal">{[t('common.outputOptions.xlsm')].flat().join(' ')}</Label>
                                 </div>
-                                <p className="text-xs text-muted-foreground pl-6 pt-1">{t('common.outputOptions.xlsmDesc')}</p>
+                                <p className="text-xs text-muted-foreground pl-6 pt-1">{[t('common.outputOptions.xlsmDesc')].flat().join(' ')}</p>
                             </div>
                         </RadioGroup>
                         <Alert variant="default" className="mt-2">
                             <Lightbulb className="h-4 w-4" />
                             <AlertDescription>
-                                {t('common.outputOptions.recommendation')}
+                                {[t('common.outputOptions.recommendation')].flat().join(' ')}
                             </AlertDescription>
                         </Alert>
                     </div>
@@ -437,7 +437,7 @@ export default function WorkbookBreakerPage({ onProcessingChange, onFileStateCha
                                     <span className="font-medium truncate pr-4">{fileName}</span>
                                     <Button size="sm" onClick={() => handleDownload(baseName, workbook)}>
                                         <Download className="mr-2 h-4 w-4" />
-                                        {t('common.download')}
+                                        {[t('common.download')].flat().join(' ')}
                                     </Button>
                                 </li>
                             );

@@ -15,3 +15,5 @@ export * from './excel-column-purger';
 export * from './excel-comparator';
 export * from './excel-pivot-creator';
 export * from './excel-group-reporter';
+export * from './excel-web-exporter';
+export * from './vbs-generators';

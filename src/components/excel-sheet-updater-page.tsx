@@ -9,14 +9,14 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { UploadCloud, Download, Wand2, ListChecks, FileSpreadsheet, Loader2, FileEdit, Settings2, CheckCircle2, PencilLine, ScrollText, SplitSquareHorizontal, Settings, Palette, ChevronDown, Lightbulb, Shield } from 'lucide-react';
+import { UploadCloud, Download, Wand2, ListChecks, FileSpreadsheet, Loader2, FileEdit, Settings2, CheckCircle2, PencilLine, ScrollText, SplitSquareHorizontal, Settings, Palette, ChevronDown, Lightbulb, Shield, Ban } from 'lucide-react';
 import { formatAndUpdateSheets } from '@/lib/excel-sheet-updater';
-import type { FormattingConfig, CustomHeaderConfig, CustomColumnConfig, HorizontalAlignment, VerticalAlignment, RangeFormattingConfig, SheetProtectionConfig } from '@/lib/excel-types';
-import { generateVbsPreview } from '@/lib/vbs-generator';
+import type { FormattingConfig, CustomHeaderConfig, CustomColumnConfig, HorizontalAlignment, VerticalAlignment, RangeFormattingConfig, SheetProtectionConfig, CommandDisablingConfig } from '@/lib/excel-types';
+import { generateVbsPreview } from '@/lib/vbs-generators';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useLanguage } from '@/context/language-context';
 import { Markup } from '@/components/ui/markup';
 
@@ -36,6 +36,7 @@ export default function ExcelSheetUpdaterPage({ onProcessingChange, onFileStateC
   const [sheetNames, setSheetNames] = useState<string[]>([]);
   const [selectedSheets, setSelectedSheets] = useState<SheetSelection>({});
   
+  const [enableHeaderFormatting, setEnableHeaderFormatting] = useState<boolean>(false);
   const [headerRowNumberForFormatting, setHeaderRowNumberForFormatting] = useState<number>(1);
   const [formatOptions, setFormatOptions] = useState({
     bold: true,
@@ -103,6 +104,11 @@ export default function ExcelSheetUpdaterPage({ onProcessingChange, onFileStateC
   const [protectionPassword, setProtectionPassword] = useState<string>('');
   const [protectionType, setProtectionType] = useState<'full' | 'range'>('full');
   const [protectionRange, setProtectionRange] = useState<string>('A1:D10');
+  const [preventSelection, setPreventSelection] = useState<boolean>(false);
+
+  const [enableCommandDisabling, setEnableCommandDisabling] = useState<boolean>(false);
+  const [disableCopyPaste, setDisableCopyPaste] = useState<boolean>(true);
+  const [disablePrint, setDisablePrint] = useState<boolean>(true);
 
 
   const [vbscriptPreview, setVbscriptPreview] = useState<string>('');
@@ -126,6 +132,7 @@ export default function ExcelSheetUpdaterPage({ onProcessingChange, onFileStateC
     if (!file) {
       setSheetNames([]);
       setSelectedSheets({});
+      setEnableHeaderFormatting(false);
       setHeaderRowNumberForFormatting(1);
       setFormatOptions({ bold: true, italic: false, underline: false, alignment: 'general', fontName: 'Calibri', fontSize: 11 });
       setEnableCustomHeaderInsertion(false);
@@ -165,6 +172,10 @@ export default function ExcelSheetUpdaterPage({ onProcessingChange, onFileStateC
       setProtectionPassword('');
       setProtectionType('full');
       setProtectionRange('A1:D10');
+      setPreventSelection(false);
+      setEnableCommandDisabling(false);
+      setDisableCopyPaste(true);
+      setDisablePrint(true);
     } else {
       const getSheetNamesFromFile = async () => {
         setIsLoading(true);
@@ -192,45 +203,22 @@ export default function ExcelSheetUpdaterPage({ onProcessingChange, onFileStateC
 
   // Effect to update VBScript Preview
   useEffect(() => {
-    const sheetsToUpdate = Object.entries(selectedSheets)
-      .filter(([,isSelected]) => isSelected)
-      .map(([sheetName]) => sheetName);
-      
-    const formattingConfig: FormattingConfig = {
-      dataTitlesRowNumber: headerRowNumberForFormatting,
-      styleOptions: formatOptions,
-    };
-
-    const customHeaderConfig: CustomHeaderConfig | undefined = enableCustomHeaderInsertion ? {
-      text: customHeaderText,
-      insertBeforeRow: customHeaderInsertBeforeRow,
-      mergeAndCenter: customHeaderMergeAndCenter,
-      styleOptions: customHeaderFormatOptions,
+    const commandDisablingConfig: CommandDisablingConfig | undefined = enableCommandDisabling ? {
+        disableCopyPaste,
+        disablePrint,
+        vbaPassword: protectionPassword // Use same password for VBA project lock
     } : undefined;
 
-    const customColumnConfig: CustomColumnConfig | undefined = enableCustomColumnInsertion ? {
-      newColumnName,
-      newColumnHeaderRow,
-      insertColumnBefore,
-      sourceDataColumn,
-      textSplitter,
-      partToUse,
-      dataStartRow,
-      alignment: customColumnAlignment,
-    } : undefined;
-    
-    const finalRangeFormatConfig = enableRangeFormatting ? rangeFormatConfig : undefined;
-    const sheetProtectionConfig: SheetProtectionConfig | undefined = enableSheetProtection ? {
-        password: protectionPassword,
-        type: protectionType,
-        range: protectionType === 'range' ? protectionRange : undefined,
-    } : undefined;
-
-    const script = generateVbsPreview(sheetsToUpdate, formattingConfig, customHeaderConfig, customColumnConfig, finalRangeFormatConfig, sheetProtectionConfig);
+    const script = generateVbsPreview(commandDisablingConfig);
     setVbscriptPreview(script);
 
-  }, [selectedSheets, headerRowNumberForFormatting, formatOptions, enableCustomHeaderInsertion, customHeaderText, customHeaderInsertBeforeRow, customHeaderMergeAndCenter, customHeaderFormatOptions, enableCustomColumnInsertion, newColumnName, newColumnHeaderRow, insertColumnBefore, sourceDataColumn, textSplitter, partToUse, dataStartRow, customColumnAlignment, enableRangeFormatting, rangeFormatConfig, enableSheetProtection, protectionPassword, protectionType, protectionRange]);
+  }, [enableCommandDisabling, disableCopyPaste, disablePrint, protectionPassword]);
 
+  useEffect(() => {
+    if (enableCommandDisabling || enableSheetProtection) {
+        setOutputFormat('xlsm');
+    }
+  }, [enableCommandDisabling, enableSheetProtection]);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
@@ -294,7 +282,7 @@ export default function ExcelSheetUpdaterPage({ onProcessingChange, onFileStateC
       toast({ title: t('updater.toast.noSheets') as string, variant: "destructive" });
       return;
     }
-    if (headerRowNumberForFormatting < 1) {
+    if (enableHeaderFormatting && headerRowNumberForFormatting < 1) {
       toast({ title: t('updater.toast.invalidHeaderRow') as string, variant: "destructive" });
       return;
     }
@@ -328,8 +316,8 @@ export default function ExcelSheetUpdaterPage({ onProcessingChange, onFileStateC
             return;
         }
     }
-    if (enableSheetProtection && !protectionPassword) {
-        toast({ title: t('updater.toast.missingPassword') as string, variant: "destructive" });
+    if ((enableSheetProtection || enableCommandDisabling) && !protectionPassword) {
+        toast({ title: t('updater.toast.missingPassword') as string, description: t('updater.toast.missingPasswordDesc') as string, variant: "destructive" });
         return;
     }
 
@@ -357,10 +345,10 @@ export default function ExcelSheetUpdaterPage({ onProcessingChange, onFileStateC
         alignment: customColumnAlignment,
       } : undefined;
 
-      const formattingConfig: FormattingConfig = {
+      const formattingConfig: FormattingConfig | undefined = enableHeaderFormatting ? {
         dataTitlesRowNumber: headerRowNumberForFormatting,
         styleOptions: formatOptions,
-      };
+      } : undefined;
 
       const finalRangeFormatConfig = enableRangeFormatting ? rangeFormatConfig : undefined;
       
@@ -368,12 +356,21 @@ export default function ExcelSheetUpdaterPage({ onProcessingChange, onFileStateC
         password: protectionPassword,
         type: protectionType,
         range: protectionType === 'range' ? protectionRange : undefined,
+        selectLockedCells: !preventSelection,
+      } : undefined;
+      
+      const commandDisablingConfig: CommandDisablingConfig | undefined = enableCommandDisabling ? {
+        disableCopyPaste,
+        disablePrint,
+        vbaPassword: protectionPassword
       } : undefined;
 
-      workbook = formatAndUpdateSheets(workbook, sheetsToUpdate, formattingConfig, customHeaderConfig, customColumnConfig, finalRangeFormatConfig, sheetProtectionConfig);
+      workbook = formatAndUpdateSheets(workbook, sheetsToUpdate, formattingConfig, customHeaderConfig, customColumnConfig, finalRangeFormatConfig, sheetProtectionConfig, commandDisablingConfig);
+
+      const finalOutputFormat = enableCommandDisabling || enableSheetProtection ? 'xlsm' : outputFormat;
 
       const originalFileName = file.name.substring(0, file.name.lastIndexOf('.'));
-      XLSX.writeFile(workbook, `${originalFileName}_updated.${outputFormat}`, { compression: true, cellStyles: true, bookType: outputFormat });
+      XLSX.writeFile(workbook, `${originalFileName}_updated.${finalOutputFormat}`, { compression: true, cellStyles: true, bookType: finalOutputFormat });
       toast({
         title: t('toast.processingComplete') as string,
         description: t('updater.toast.updateSuccess') as string,
@@ -382,12 +379,12 @@ export default function ExcelSheetUpdaterPage({ onProcessingChange, onFileStateC
 
     } catch (error) {
       console.error("Error updating sheets:", error);
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred during update.';
+      const errorMessage = error instanceof Error ? error.message : t('updater.toast.updateErrorUnknown') as string;
       toast({ title: t('toast.errorReadingFile') as string, description: t('updater.toast.updateError', {errorMessage}) as string, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
-  }, [file, selectedSheets, headerRowNumberForFormatting, formatOptions, enableCustomHeaderInsertion, customHeaderText, customHeaderInsertBeforeRow, customHeaderMergeAndCenter, customHeaderFormatOptions, enableCustomColumnInsertion, newColumnName, newColumnHeaderRow, insertColumnBefore, sourceDataColumn, textSplitter, partToUse, dataStartRow, customColumnAlignment, toast, enableRangeFormatting, rangeFormatConfig, outputFormat, t, enableSheetProtection, protectionPassword, protectionType, protectionRange]);
+  }, [file, selectedSheets, enableHeaderFormatting, headerRowNumberForFormatting, formatOptions, enableCustomHeaderInsertion, customHeaderText, customHeaderInsertBeforeRow, customHeaderMergeAndCenter, customHeaderFormatOptions, enableCustomColumnInsertion, newColumnName, newColumnHeaderRow, insertColumnBefore, sourceDataColumn, textSplitter, partToUse, dataStartRow, customColumnAlignment, toast, enableRangeFormatting, rangeFormatConfig, outputFormat, t, enableSheetProtection, protectionPassword, protectionType, protectionRange, preventSelection, enableCommandDisabling, disableCopyPaste, disablePrint]);
 
   const allSheetsSelected = sheetNames.length > 0 && sheetNames.every(name => selectedSheets[name]);
 
@@ -486,6 +483,105 @@ export default function ExcelSheetUpdaterPage({ onProcessingChange, onFileStateC
                 <Settings className="h-6 w-6" />
                 <span>{t('updater.configStep')}</span>
               </Label>
+
+              <Card className="p-4 border-dashed border-primary/50 bg-primary/5">
+                <CardHeader className="p-0 pb-4 flex-row items-center space-x-3 space-y-0">
+                  <Checkbox
+                    id="enable-header-formatting"
+                    checked={enableHeaderFormatting}
+                    onCheckedChange={(checked) => setEnableHeaderFormatting(checked as boolean)}
+                    disabled={isLoading}
+                  />
+                  <Label htmlFor="enable-header-formatting" className="flex items-center space-x-2 text-md font-semibold text-primary">
+                    <FileEdit className="h-5 w-5" />
+                    <span>{t('updater.dataHeaderStep')}</span>
+                  </Label>
+                </CardHeader>
+                {enableHeaderFormatting && (
+                  <CardContent className="p-0">
+                    <div className="space-y-4 pl-8 border-l-2 border-primary/30 ml-2 pt-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="header-row-updater" className="text-sm font-medium">{t('updater.dataHeaderRow')}</Label>
+                          <Input
+                            id="header-row-updater"
+                            type="number"
+                            min="1"
+                            value={headerRowNumberForFormatting}
+                            onChange={(e) => setHeaderRowNumberForFormatting(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                            disabled={isLoading}
+                            className="w-full"
+                          />
+                          <p className="text-xs text-muted-foreground">{t('updater.dataHeaderRowDesc')}</p>
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-sm font-medium">{t('updater.dataHeaderFormatting')}</Label>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 border rounded-md bg-background">
+                                <div className="flex flex-col space-y-2">
+                                    <div className="flex items-center space-x-2">
+                                        <Checkbox
+                                        id="format-bold"
+                                        checked={!!formatOptions.bold}
+                                        onCheckedChange={(checked) => setFormatOptions(prev => ({ ...prev, bold: checked as boolean }))}
+                                        disabled={isLoading}
+                                        />
+                                        <Label htmlFor="format-bold" className="text-sm font-normal">{t('common.bold')}</Label>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                        <Checkbox
+                                        id="format-italic"
+                                        checked={!!formatOptions.italic}
+                                        onCheckedChange={(checked) => setFormatOptions(prev => ({ ...prev, italic: checked as boolean }))}
+                                        disabled={isLoading}
+                                        />
+                                        <Label htmlFor="format-italic" className="text-sm font-normal">{t('common.italic')}</Label>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                        <Checkbox
+                                        id="format-underline"
+                                        checked={!!formatOptions.underline}
+                                        onCheckedChange={(checked) => setFormatOptions(prev => ({ ...prev, underline: checked as boolean }))}
+                                        disabled={isLoading}
+                                        />
+                                        <Label htmlFor="format-underline" className="text-sm font-normal">{t('common.underline')}</Label>
+                                    </div>
+                                </div>
+                                <div className="space-y-4">
+                                    <div className="space-y-1">
+                                        <Label htmlFor="header-alignment-select" className="text-sm font-medium">{t('common.alignment')}</Label>
+                                        <Select
+                                            value={formatOptions.alignment || 'general'}
+                                            onValueChange={(value) => setFormatOptions(prev => ({...prev, alignment: value as HorizontalAlignment}))}
+                                            disabled={isLoading}
+                                        >
+                                            <SelectTrigger id="header-alignment-select">
+                                                <SelectValue placeholder={t('updater.customColumnAlignmentPlaceholder') as string} />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="general">{t('common.alignments.general')}</SelectItem>
+                                                <SelectItem value="left">{t('common.alignments.left')}</SelectItem>
+                                                <SelectItem value="center">{t('common.alignments.center')}</SelectItem>
+                                                <SelectItem value="centerContinuous">{t('common.alignments.centerContinuous')}</SelectItem>
+                                                <SelectItem value="right">{t('common.alignments.right')}</SelectItem>
+                                                <SelectItem value="fill">{t('common.alignments.fill')}</SelectItem>
+                                                <SelectItem value="justify">{t('common.alignments.justify')}</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label htmlFor="header-font-name" className="text-sm font-medium">{t('common.fontName')}</Label>
+                                        <Input id="header-font-name" type="text" value={formatOptions.fontName || ''} onChange={(e) => setFormatOptions(prev => ({ ...prev, fontName: e.target.value }))} disabled={isLoading} placeholder="e.g., Arial" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label htmlFor="header-font-size" className="text-sm font-medium">{t('common.fontSize')}</Label>
+                                        <Input id="header-font-size" type="number" min="1" value={formatOptions.fontSize || 11} onChange={(e) => setFormatOptions(prev => ({ ...prev, fontSize: parseInt(e.target.value, 10) || 11 }))} disabled={isLoading} placeholder="e.g., 12" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                  </CardContent>
+                )}
+              </Card>
 
               <Card className="p-4 border-dashed border-primary/50 bg-primary/5">
                 <CardHeader className="p-0 pb-4 flex-row items-center space-x-3 space-y-0">
@@ -804,119 +900,87 @@ export default function ExcelSheetUpdaterPage({ onProcessingChange, onFileStateC
                                 <p className="text-xs text-muted-foreground">{t('updater.protection.rangeToLockDesc')}</p>
                             </div>
                         )}
+                        <div className="flex items-start space-x-3 pt-4 border-t mt-4">
+                            <Checkbox
+                                id="protection-prevent-select"
+                                checked={preventSelection}
+                                onCheckedChange={(checked) => setPreventSelection(checked as boolean)}
+                                disabled={isLoading}
+                            />
+                            <div className="grid gap-1.5 leading-none">
+                                <Label htmlFor="protection-prevent-select" className="font-normal">{t('updater.protection.preventSelection')}</Label>
+                                <p className="text-xs text-muted-foreground">{t('updater.protection.preventSelectionDesc')}</p>
+                            </div>
+                        </div>
                      </div>
                   </CardContent>
                 )}
               </Card>
 
-
-              <Card className="p-4">
-                <CardHeader className="p-0 pb-4">
-                   <Label className="flex items-center space-x-2 text-md font-semibold">
-                    <FileEdit className="h-5 w-5" />
-                    <span>{t('updater.dataHeaderStep')}</span>
-                  </Label>
-                </CardHeader>
-                <CardContent className="p-0 space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="header-row-updater" className="text-sm font-medium">{t('updater.dataHeaderRow')}</Label>
-                    <Input
-                      id="header-row-updater"
-                      type="number"
-                      min="1"
-                      value={headerRowNumberForFormatting}
-                      onChange={(e) => setHeaderRowNumberForFormatting(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                      disabled={isLoading}
-                      className="w-full"
+                <Card className="p-4 border-dashed border-primary/50 bg-primary/5">
+                <CardHeader className="p-0 pb-4 flex-row items-center space-x-3 space-y-0">
+                    <Checkbox
+                        id="enable-command-disabling"
+                        checked={enableCommandDisabling}
+                        onCheckedChange={(checked) => setEnableCommandDisabling(checked as boolean)}
+                        disabled={isLoading}
                     />
-                    <p className="text-xs text-muted-foreground">{t('updater.dataHeaderRowDesc')}</p>
-                  </div>
-                  <div className="space-y-2">
-                      <Label className="text-sm font-medium">{t('updater.dataHeaderFormatting')}</Label>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 border rounded-md bg-background">
-                          <div className="flex flex-col space-y-2">
-                               <div className="flex items-center space-x-2">
-                                  <Checkbox
-                                  id="format-bold"
-                                  checked={!!formatOptions.bold}
-                                  onCheckedChange={(checked) => setFormatOptions(prev => ({ ...prev, bold: checked as boolean }))}
-                                  disabled={isLoading}
-                                  />
-                                  <Label htmlFor="format-bold" className="text-sm font-normal">{t('common.bold')}</Label>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                  <Checkbox
-                                  id="format-italic"
-                                  checked={!!formatOptions.italic}
-                                  onCheckedChange={(checked) => setFormatOptions(prev => ({ ...prev, italic: checked as boolean }))}
-                                  disabled={isLoading}
-                                  />
-                                  <Label htmlFor="format-italic" className="text-sm font-normal">{t('common.italic')}</Label>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                  <Checkbox
-                                  id="format-underline"
-                                  checked={!!formatOptions.underline}
-                                  onCheckedChange={(checked) => setFormatOptions(prev => ({ ...prev, underline: checked as boolean }))}
-                                  disabled={isLoading}
-                                  />
-                                  <Label htmlFor="format-underline" className="text-sm font-normal">{t('common.underline')}</Label>
-                              </div>
-                          </div>
-                          <div className="space-y-4">
-                              <div className="space-y-1">
-                                  <Label htmlFor="header-alignment-select" className="text-sm font-medium">{t('common.alignment')}</Label>
-                                  <Select
-                                      value={formatOptions.alignment || 'general'}
-                                      onValueChange={(value) => setFormatOptions(prev => ({...prev, alignment: value as HorizontalAlignment}))}
-                                      disabled={isLoading}
-                                  >
-                                      <SelectTrigger id="header-alignment-select">
-                                          <SelectValue placeholder={t('updater.customColumnAlignmentPlaceholder') as string} />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                          <SelectItem value="general">{t('common.alignments.general')}</SelectItem>
-                                          <SelectItem value="left">{t('common.alignments.left')}</SelectItem>
-                                          <SelectItem value="center">{t('common.alignments.center')}</SelectItem>
-                                          <SelectItem value="centerContinuous">{t('common.alignments.centerContinuous')}</SelectItem>
-                                          <SelectItem value="right">{t('common.alignments.right')}</SelectItem>
-                                          <SelectItem value="fill">{t('common.alignments.fill')}</SelectItem>
-                                          <SelectItem value="justify">{t('common.alignments.justify')}</SelectItem>
-                                      </SelectContent>
-                                  </Select>
-                              </div>
-                              <div className="space-y-1">
-                                  <Label htmlFor="header-font-name" className="text-sm font-medium">{t('common.fontName')}</Label>
-                                  <Input id="header-font-name" type="text" value={formatOptions.fontName || ''} onChange={(e) => setFormatOptions(prev => ({ ...prev, fontName: e.target.value }))} disabled={isLoading} placeholder="e.g., Arial" />
-                              </div>
-                              <div className="space-y-1">
-                                  <Label htmlFor="header-font-size" className="text-sm font-medium">{t('common.fontSize')}</Label>
-                                  <Input id="header-font-size" type="number" min="1" value={formatOptions.fontSize || 11} onChange={(e) => setFormatOptions(prev => ({ ...prev, fontSize: parseInt(e.target.value, 10) || 11 }))} disabled={isLoading} placeholder="e.g., 12" />
-                              </div>
-                          </div>
-                      </div>
-                  </div>
-                </CardContent>
-              </Card>
+                    <Label htmlFor="enable-command-disabling" className="flex items-center space-x-2 text-md font-semibold text-primary">
+                        <Ban className="h-5 w-5" />
+                        <span>{t('updater.commandDisabling.title')}</span>
+                    </Label>
+                </CardHeader>
+                {enableCommandDisabling && (
+                    <CardContent className="p-0">
+                        <div className="space-y-4 pl-8 border-l-2 border-primary/30 ml-2 pt-4">
+                             <Alert variant="destructive">
+                                <Shield className="h-4 w-4" />
+                                <AlertTitle>{t('updater.protection.vbaLockTitle')}</AlertTitle>
+                                <AlertDescription>
+                                    <Markup text={t('updater.protection.vbaLockDesc') as string} />
+                                </AlertDescription>
+                            </Alert>
+                            <div className="flex items-center space-x-2">
+                                <Checkbox
+                                    id="disable-copy-paste"
+                                    checked={disableCopyPaste}
+                                    onCheckedChange={(c) => setDisableCopyPaste(c as boolean)}
+                                />
+                                <Label htmlFor="disable-copy-paste" className="font-normal">{t('updater.commandDisabling.disableCopyPaste')}</Label>
+                            </div>
+                             <div className="flex items-center space-x-2">
+                                <Checkbox
+                                    id="disable-print"
+                                    checked={disablePrint}
+                                    onCheckedChange={(c) => setDisablePrint(c as boolean)}
+                                />
+                                <Label htmlFor="disable-print" className="font-normal">{t('updater.commandDisabling.disablePrint')}</Label>
+                            </div>
+                        </div>
+                    </CardContent>
+                )}
+                </Card>
             </div>
 
             {/* VBScript Preview Section */}
-            <div className="space-y-2">
-              <Label className="flex items-center space-x-2 text-sm font-medium">
-                <ScrollText className="h-5 w-5" />
-                <span>{t('updater.vbsPreviewStep')}</span>
-              </Label>
-              <Card className="bg-secondary/20">
-                <CardContent className="p-0">
-                  <pre className="text-xs p-4 overflow-x-auto bg-gray-800 text-white rounded-md max-h-60">
-                    <code>{vbscriptPreview}</code>
-                  </pre>
-                </CardContent>
-              </Card>
-               <p className="text-xs text-muted-foreground">
-                <Markup text={t('updater.vbsPreviewDesc') as string} />
-              </p>
-            </div>
+            {enableCommandDisabling && (
+                <div className="space-y-2">
+                <Label className="flex items-center space-x-2 text-sm font-medium">
+                    <ScrollText className="h-5 w-5" />
+                    <span>{t('updater.vbsPreviewStep')}</span>
+                </Label>
+                <Card className="bg-secondary/20">
+                    <CardContent className="p-0">
+                    <pre className="text-xs p-4 overflow-x-auto bg-gray-800 text-white rounded-md max-h-60">
+                        <code>{vbscriptPreview}</code>
+                    </pre>
+                    </CardContent>
+                </Card>
+                <p className="text-xs text-muted-foreground">
+                    <Markup text={t('updater.vbsPreviewDesc') as string} />
+                </p>
+                </div>
+            )}
           </>
         )}
       </CardContent>
@@ -927,7 +991,7 @@ export default function ExcelSheetUpdaterPage({ onProcessingChange, onFileStateC
                 <RadioGroup value={outputFormat} onValueChange={(v) => setOutputFormat(v as any)} className="space-y-3">
                     <div>
                         <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="xlsx" id="format-xlsx-updater" />
+                            <RadioGroupItem value="xlsx" id="format-xlsx-updater" disabled={enableCommandDisabling || enableSheetProtection} />
                             <Label htmlFor="format-xlsx-updater" className="font-normal">{t('common.outputOptions.xlsx')}</Label>
                         </div>
                         <p className="text-xs text-muted-foreground pl-6 pt-1">{t('common.outputOptions.xlsxDesc')}</p>
@@ -943,7 +1007,7 @@ export default function ExcelSheetUpdaterPage({ onProcessingChange, onFileStateC
                 <Alert variant="default" className="mt-2">
                     <Lightbulb className="h-4 w-4" />
                     <AlertDescription>
-                        {t('common.outputOptions.recommendation')}
+                        {enableCommandDisabling || enableSheetProtection ? t('updater.toast.macroRequired') : t('common.outputOptions.recommendation')}
                     </AlertDescription>
                 </Alert>
             </div>
@@ -961,5 +1025,3 @@ export default function ExcelSheetUpdaterPage({ onProcessingChange, onFileStateC
     </Card>
   );
 }
-
-    

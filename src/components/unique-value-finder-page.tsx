@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { UploadCloud, Download, Fingerprint, Loader2, CheckCircle2, List, Filter, TextCursorInput, XCircle, Trash2 } from 'lucide-react';
 import { useLanguage } from '@/context/language-context';
@@ -241,7 +240,7 @@ export default function UniqueValueFinderPage({ onProcessingChange, onFileStateC
     const wb = XLSX.utils.book_new();
     const sortedValues = Array.from(valueCounts.entries()).sort((a, b) => b[1] - a[1]);
     const ws_data = [
-      ["Unique Value", "Count"],
+      [t('uniqueFinder.tableHeaderValue'), t('uniqueFinder.tableHeaderCount')],
       ...sortedValues.map(([value, count]) => [value, count])
     ];
     const ws = XLSX.utils.aoa_to_sheet(ws_data);
